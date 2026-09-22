@@ -12,6 +12,8 @@ interface StationHeaderProps {
   onOpenHistory: () => void;
   onOpenBackend: () => void;
   hasExternalBackend: boolean;
+  databaseType?: string;
+  pendingSyncCount?: number;
   scanCount: number;
 }
 
@@ -25,9 +27,18 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
   onOpenHistory,
   onOpenBackend,
   hasExternalBackend,
+  databaseType,
+  pendingSyncCount,
   scanCount,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const getDbLabel = () => {
+    if (!hasExternalBackend) return 'Local DB';
+    if (databaseType === 'google_sheets') return 'Sheets Live';
+    if (databaseType === 'supabase') return 'Supabase Live';
+    return 'Live DB';
+  };
 
   return (
     <div className="w-full mb-5 text-center">
@@ -49,19 +60,24 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Backend Connection Launcher */}
+          {/* Live Database Connection Launcher */}
           <button
             onClick={onOpenBackend}
             className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer backdrop-blur-md ${
               hasExternalBackend
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60'
+                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/50 hover:bg-emerald-900/70 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
                 : 'bg-white/5 text-[#9BB0D3] hover:text-white border-white/15 hover:bg-white/10'
             }`}
-            title="Configure Backend link and data recording"
+            title="Configure Live Database connection and instant sync"
           >
             <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Backend</span>
+            <span className="hidden sm:inline">{getDbLabel()}</span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            {pendingSyncCount !== undefined && pendingSyncCount > 0 && (
+              <span className="bg-amber-500 text-black text-[9px] font-bold px-1 rounded-full">
+                {pendingSyncCount}
+              </span>
+            )}
           </button>
 
           {/* Sound Toggle */}

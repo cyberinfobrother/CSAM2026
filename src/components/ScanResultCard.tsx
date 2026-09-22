@@ -112,13 +112,20 @@ export const ScanResultCard: React.FC<ScanResultCardProps> = ({
 
             {/* Backend Sync Indicator */}
             {outcome.syncedToExternal !== undefined && (
-              <div className="text-[11px] text-white/80 flex items-center gap-1.5 mt-1 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span>
-                  {outcome.syncedToExternal
-                    ? 'Synced to Remote Backend Link'
-                    : 'Recorded to Express Database'}
-                </span>
+              <div className="text-[11px] text-white/90 flex flex-col items-center gap-1 mt-1.5 font-medium">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>
+                    {outcome.syncedToExternal
+                      ? outcome.updatedColumn
+                        ? `Logged to Google Sheet Column [${outcome.updatedColumn}]`
+                        : 'Synced to Google Sheets Database'
+                      : 'Recorded to Local Database'}
+                  </span>
+                </div>
+                {outcome.syncMessage && (
+                  <span className="text-[10px] text-white/70 italic">{outcome.syncMessage}</span>
+                )}
               </div>
             )}
           </div>

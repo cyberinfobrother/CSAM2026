@@ -8,6 +8,7 @@ export interface VendorStation {
 
 export interface Participant {
   token: string;
+  participantId?: string;
   name: string;
   office: string;
   email?: string;
@@ -28,6 +29,9 @@ export interface ScanRecord {
   totalRequired: number;
   raffleQualified: boolean;
   syncedToExternal?: boolean;
+  syncError?: string | null;
+  databaseType?: string;
+  updatedColumn?: string;
 }
 
 export interface ScanOutcome {
@@ -43,6 +47,24 @@ export interface ScanOutcome {
   rawPayload?: string;
   syncedToExternal?: boolean;
   externalBackendInfo?: string;
+  syncMessage?: string;
+  updatedColumn?: string;
 }
 
 export type ModalState = 'idle' | 'requesting' | 'granted' | 'denied';
+
+export type DatabaseType = 'google_sheets' | 'rest_api' | 'webhook' | 'supabase';
+
+export interface DatabaseConfig {
+  databaseType: DatabaseType;
+  databaseUrl: string;
+  apiKey?: string;
+  authHeader?: string;
+  enabled: boolean;
+  hasExternalBackend?: boolean;
+  builtInBackendActive?: boolean;
+  lastConnectedAt?: number;
+  lastStatus?: string;
+  pendingSyncCount?: number;
+}
+

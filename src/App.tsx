@@ -120,13 +120,13 @@ export default function App() {
     } catch (e) {}
   }, []);
 
-  const handleSaveBackendConfig = async (url: string) => {
-    const updated = await saveBackendConfig(url);
+  const handleSaveBackendConfig = async (configOrUrl: any) => {
+    const updated = await saveBackendConfig(configOrUrl);
     setBackendConfig(updated);
   };
 
-  const handleTestBackend = async (url: string) => {
-    return await testBackendConnection(url);
+  const handleTestBackend = async (params: any) => {
+    return await testBackendConnection(params);
   };
 
   // Handle participant scan logic (calls real backend and syncs)
@@ -160,11 +160,19 @@ export default function App() {
       token = token.trim();
 
       try {
-        // Submit scan record to the backend API
+        // Submit scan record to the backend API & live database
         const res = await recordScanWithBackend(currentVendor.token, token);
+
+        // Refresh database config for pending counters
+        getBackendConfig().then((cfg) => setBackendConfig(cfg));
 
         const isDuplicate = res.duplicate;
         const isRaffleQualified = res.raffleQualified;
+
+        const updatedCol = res.externalBackend?.updatedColumn || (res as any).updatedColumn || currentVendor.id;
+        const syncMsg = res.externalBackend?.synced
+          ? `Logged to ${res.externalBackend.sheetName || 'Google Sheet'} column [${updatedCol}]`
+          : undefined;
 
         if (isDuplicate) {
           soundFx.playDuplicate();
@@ -179,6 +187,8 @@ export default function App() {
             raffleQualified: isRaffleQualified,
             vendorName: currentVendor.name,
             syncedToExternal: res.externalBackend ? res.externalBackend.synced : undefined,
+            updatedColumn: updatedCol,
+            syncMessage: syncMsg,
           });
         } else {
           if (isRaffleQualified && res.completion === TOTAL_STATIONS_FOR_RAFFLE) {
@@ -199,6 +209,8 @@ export default function App() {
             raffleQualified: isRaffleQualified,
             vendorName: currentVendor.name,
             syncedToExternal: res.externalBackend ? res.externalBackend.synced : undefined,
+            updatedColumn: updatedCol,
+            syncMessage: syncMsg,
           });
         }
 
@@ -215,7 +227,8 @@ export default function App() {
           completionCount: res.completion,
           totalRequired: res.total,
           raffleQualified: isRaffleQualified,
-          syncedToExternal: res.externalBackend ? res.externalBackend.synced : undefined,
+          syncedToExternal: res.externalBackend ? res.externalBackend.synced : false,
+          updatedColumn: updatedCol,
         };
         setScans((prev) => [newRecord, ...prev]);
 
@@ -433,6 +446,8 @@ export default function App() {
             onOpenHistory={() => setIsHistoryModalOpen(true)}
             onOpenBackend={() => setIsBackendModalOpen(true)}
             hasExternalBackend={backendConfig.hasExternalBackend}
+            databaseType={backendConfig.databaseType}
+            pendingSyncCount={backendConfig.pendingSyncCount}
             scanCount={stationScans.length}
           />
 

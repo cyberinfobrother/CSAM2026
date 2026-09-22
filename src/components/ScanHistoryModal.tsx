@@ -35,6 +35,7 @@ export const ScanHistoryModal: React.FC<ScanHistoryModalProps> = ({
       'Date Time',
       'Vendor ID',
       'Vendor Name',
+      'Respective Column',
       'Participant Token',
       'Participant Name',
       'Office / Dept',
@@ -48,6 +49,7 @@ export const ScanHistoryModal: React.FC<ScanHistoryModalProps> = ({
       new Date(s.timestamp).toLocaleString(),
       s.vendorId,
       `"${s.vendorName.replace(/"/g, '""')}"`,
+      `"${(s.updatedColumn || s.vendorId).replace(/"/g, '""')}"`,
       s.participantToken,
       `"${s.participantName.replace(/"/g, '""')}"`,
       `"${s.participantOffice.replace(/"/g, '""')}"`,
@@ -167,7 +169,14 @@ export const ScanHistoryModal: React.FC<ScanHistoryModalProps> = ({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-[#8E9BB5]">{s.participantOffice}</div>
+                    <div className="text-[11px] text-[#8E9BB5] flex items-center gap-1.5 mt-0.5">
+                      <span>{s.participantOffice}</span>
+                      {s.updatedColumn && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#1C253D] text-emerald-300 border border-emerald-500/30 font-mono">
+                          Col: {s.updatedColumn}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
