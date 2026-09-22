@@ -9,21 +9,21 @@ export const DEFAULT_VENDORS: VendorStation[] = [
     name: 'Booth 1 - Netsec',
     category: 'Network Security & Firewall',
     stampTitle: 'Netsec Defense Challenge',
-    token: 'TOKEN-BOOTH-1-NETSEC',
+    token: 'B1',
   },
   {
     id: 'Booth 2',
     name: 'Booth2 - TVM',
     category: 'Threat & Vulnerability Management',
     stampTitle: 'TVM Assessment Challenge',
-    token: 'TOKEN-BOOTH-2-TVM',
+    token: 'B2',
   },
   {
     id: 'Booth 3',
     name: 'Booth3 - SecOps',
     category: 'Security Operations & Incident Response',
     stampTitle: 'SecOps Triage Challenge',
-    token: 'TOKEN-BOOTH-3-SECOPS',
+    token: 'B3',
   },
 ];
 

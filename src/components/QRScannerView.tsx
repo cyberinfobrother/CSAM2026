@@ -100,12 +100,16 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
 
       const handleSuccess = (decodedText: string) => {
         const now = Date.now();
-        // Prevent duplicate firing while attendee holds badge or during cooldown
+        // Prevent duplicate firing while attendee holds badge or during active processing
         if (isProcessingRef.current) return;
-        if (lastScannedRef.current.text === decodedText && now - lastScannedRef.current.time < 3000) {
+        
+        // Strict guard: if the same badge is held in front of the lens, ignore for 8 seconds
+        if (lastScannedRef.current.text === decodedText && now - lastScannedRef.current.time < 8000) {
           return;
         }
-        if (now - lastScannedRef.current.time < 1200) {
+
+        // Global cooldown of 1.5 seconds between any badges
+        if (now - lastScannedRef.current.time < 1500) {
           return;
         }
 
@@ -114,17 +118,17 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
 
         // Visual flash indication on the viewfinder
         setScanFlash(true);
-        setScannerStatus('✓ QR Code Scanned!');
+        setScannerStatus('Processing badge scan...');
 
         // Send to parent handler
         onScanSuccess(decodedText);
 
-        // Reset flash and lock after 1.5 seconds WITHOUT stopping the camera
+        // Reset flash and unlock after 1.8 seconds so marshal can scan the NEXT attendee immediately
         setTimeout(() => {
           setScanFlash(false);
           isProcessingRef.current = false;
           setScannerStatus('Camera live — Ready for next attendee');
-        }, 1500);
+        }, 1800);
       };
 
       const targetCamera = cameraId || selectedCameraId;

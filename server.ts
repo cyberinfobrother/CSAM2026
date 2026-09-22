@@ -18,9 +18,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Default Vendors (Booth 1, Booth 2, Booth 3 matching Google Sheets database)
 const VENDORS: Record<string, { id: string; name: string; category: string; stampTitle: string; token: string }> = {
-  'Booth 1': { id: 'Booth 1', name: 'Booth 1 - Netsec', category: 'Network Security & Firewall', stampTitle: 'Netsec Defense Challenge', token: 'TOKEN-BOOTH-1-NETSEC' },
-  'Booth 2': { id: 'Booth 2', name: 'Booth2 - TVM', category: 'Threat & Vulnerability Management', stampTitle: 'TVM Assessment Challenge', token: 'TOKEN-BOOTH-2-TVM' },
-  'Booth 3': { id: 'Booth 3', name: 'Booth3 - SecOps', category: 'Security Operations & Incident Response', stampTitle: 'SecOps Triage Challenge', token: 'TOKEN-BOOTH-3-SECOPS' },
+  'Booth 1': { id: 'Booth 1', name: 'Booth 1 - Netsec', category: 'Network Security & Firewall', stampTitle: 'Netsec Defense Challenge', token: 'B1' },
+  'Booth 2': { id: 'Booth 2', name: 'Booth2 - TVM', category: 'Threat & Vulnerability Management', stampTitle: 'TVM Assessment Challenge', token: 'B2' },
+  'Booth 3': { id: 'Booth 3', name: 'Booth3 - SecOps', category: 'Security Operations & Incident Response', stampTitle: 'SecOps Triage Challenge', token: 'B3' },
 };
 
 // Data persistence structures
@@ -82,9 +82,13 @@ function ensureDataDir() {
 const participants: Map<string, ParticipantRecord> = new Map();
 let scanHistory: ScanLog[] = [];
 
+// Hardcoded production Google Apps Script endpoint
+const DEFAULT_GOOGLE_SHEETS_URL =
+  'https://script.google.com/macros/s/AKfycbxAeLqizAvH2HGjbQF0eG7rPaf0RTNE41NfC6Xob5fRJINICFsNvIETXNZj08l9DK3A/exec';
+
 let dbConfig: DatabaseConfigData = {
   databaseType: 'google_sheets',
-  databaseUrl: process.env.BACKEND_WEBHOOK_URL || process.env.DATABASE_URL || '',
+  databaseUrl: process.env.BACKEND_WEBHOOK_URL || process.env.DATABASE_URL || DEFAULT_GOOGLE_SHEETS_URL,
   apiKey: process.env.DATABASE_API_KEY || '',
   authHeader: '',
   enabled: true,
@@ -334,20 +338,32 @@ app.post('/api/vendor/scan', async (req, res) => {
     participant.lastScannedAt = new Date().toISOString();
 
     // Prepare Live Database synchronization payload
+    const boothCode = vendor.token || (vendor.id.includes('2') ? 'B2' : vendor.id.includes('3') ? 'B3' : 'B1');
+    const boothNum = vendor.id.includes('2') ? 2 : vendor.id.includes('3') ? 3 : 1;
+    const qrCol = `BoothQR${boothNum}`;
+
     const liveDbPayload = {
-      action: 'recordVendorScan',
-      event: 'SCAN_RECORDED',
+      action: 'recordBoothCheckin',
+      event: 'CSAM_BOOTH_SCAN',
       timestamp: new Date().toISOString(),
+      booth: boothCode,
+      boothToken: boothCode,
+      boothNumber: boothNum,
       vendorToken: vendor.token,
       vendorId: vendor.id,
       vendorName: vendor.name,
-      boothId: vendor.id,
+      boothId: boothCode,
       boothName: vendor.name,
-      boothColumn: vendor.id, // Target column in Google Sheets: e.g. "Booth 1", "Booth 2", "Booth 3"
+      boothColumn: vendor.id, // Target column: e.g. "Booth 1" (Survey status)
+      boothQrColumn: qrCol,   // Target QR column: e.g. "BoothQR1", "BoothQR2", "BoothQR3"
+      qrColumnName: qrCol,
+      qrCompleted: true,      // Sets the QR column to true in Google Sheets
+      qrValue: true,
       vendorCategory: vendor.category,
       stampTitle: vendor.stampTitle,
       participantToken: token,
-      participantId: participant.participantId,
+      participantId: participant.participantId || token,
+      participantIdInput: participant.participantId || token,
       participantName: participant.name,
       participantOffice: participant.office,
       isDuplicate: alreadyCompleted,
@@ -357,6 +373,7 @@ app.post('/api/vendor/scan', async (req, res) => {
       currentParticipant: {
         token: participant.token,
         participantId: participant.participantId,
+        id: participant.participantId,
         name: participant.name,
         office: participant.office,
         completedVendors: participant.completedVendors,
@@ -371,6 +388,8 @@ app.post('/api/vendor/scan', async (req, res) => {
     let rowNumber: number | undefined = undefined;
     let sheetName: string | undefined = undefined;
 
+    let isDuplicateResult = alreadyCompleted;
+
     // Merge live database response into participant record if provided
     if (syncResult.synced && syncResult.data) {
       const d = syncResult.data;
@@ -384,6 +403,11 @@ app.post('/api/vendor/scan', async (req, res) => {
       }
       if (typeof d.sheetName === 'string' || typeof remotePart.sheetName === 'string') {
         sheetName = d.sheetName ?? remotePart.sheetName;
+      }
+
+      // If Google Sheet returned duplicate: true, honor it as duplicate
+      if (d.duplicate === true || d.isDuplicate === true) {
+        isDuplicateResult = true;
       }
 
       if (remotePart.name && typeof remotePart.name === 'string') {
@@ -419,7 +443,7 @@ app.post('/api/vendor/scan', async (req, res) => {
       participantOffice: participant.office,
       vendorId: vendor.id,
       vendorName: vendor.name,
-      isDuplicate: alreadyCompleted,
+      isDuplicate: isDuplicateResult,
       completionCount: completion,
       totalRequired: TOTAL_STATIONS,
       raffleQualified: isRaffleQualified,
@@ -438,7 +462,7 @@ app.post('/api/vendor/scan', async (req, res) => {
     res.json({
       success: true,
       ok: true,
-      duplicate: alreadyCompleted,
+      duplicate: isDuplicateResult,
       participantId: participant.participantId || participant.token,
       vendor: vendor.id,
       vendorName: vendor.name,

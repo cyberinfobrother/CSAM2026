@@ -25,6 +25,7 @@ import {
   fetchServerScans,
   BackendConfig,
   BackendTestResult,
+  HARDCODED_GOOGLE_SHEETS_URL,
 } from './utils/api';
 import { QrCode, Sparkles, User, AlertCircle, ShieldAlert } from 'lucide-react';
 
@@ -47,10 +48,12 @@ export default function App() {
     return DEFAULT_VENDORS.find((v) => v.id === storedId) || DEFAULT_VENDORS[0]; // Booth 1 default
   });
 
-  // Backend Integration State
+  // Backend Integration State (Defaulted to live Google Sheets database)
   const [backendConfig, setBackendConfig] = useState<BackendConfig>({
-    backendUrl: '',
-    hasExternalBackend: false,
+    databaseType: 'google_sheets',
+    backendUrl: HARDCODED_GOOGLE_SHEETS_URL,
+    databaseUrl: HARDCODED_GOOGLE_SHEETS_URL,
+    hasExternalBackend: true,
     builtInBackendActive: true,
   });
   const [isBackendModalOpen, setIsBackendModalOpen] = useState<boolean>(false);
@@ -178,8 +181,8 @@ export default function App() {
           soundFx.playDuplicate();
           setOutcome({
             type: 'duplicate',
-            title: '⚠️ ALREADY COMPLETED',
-            message: res.message,
+            title: '⛔ DUPLICATE SCAN REJECTED',
+            message: res.message || `This attendee has already been stamped at ${currentVendor.name}. Only 1 entry per booth is allowed.`,
             participantName: res.name,
             participantOffice: res.office,
             completion: res.completion,

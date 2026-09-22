@@ -18,7 +18,7 @@ import {
   Wifi,
   FileSpreadsheet,
 } from 'lucide-react';
-import { BackendConfig, BackendTestResult, syncPendingScans } from '../utils/api';
+import { BackendConfig, BackendTestResult, syncPendingScans, HARDCODED_GOOGLE_SHEETS_URL } from '../utils/api';
 import { DatabaseType, DatabaseConfig } from '../types';
 
 interface BackendConnectModalProps {
@@ -37,7 +37,9 @@ export const BackendConnectModal: React.FC<BackendConnectModalProps> = ({
   onTestConnection,
 }) => {
   const [dbType, setDbType] = useState<DatabaseType>(config.databaseType || 'google_sheets');
-  const [urlInput, setUrlInput] = useState(config.databaseUrl || config.backendUrl || '');
+  const [urlInput, setUrlInput] = useState(
+    config.databaseUrl || config.backendUrl || HARDCODED_GOOGLE_SHEETS_URL
+  );
   const [apiKeyInput, setApiKeyInput] = useState(config.apiKey || '');
   const [authHeaderInput, setAuthHeaderInput] = useState(config.authHeader || '');
   const [syncEnabled, setSyncEnabled] = useState(config.enabled !== false);
@@ -108,21 +110,36 @@ export const BackendConnectModal: React.FC<BackendConnectModalProps> = ({
     }
   };
 
-  // Turnkey Google Apps Script tailored specifically to the user's exact 10 columns
+  // Turnkey Google Apps Script tailored specifically to the user's exact 13 columns
   const sampleAppsScriptCode = `// ============================================================================
 // CSAM 2026 GOOGLE SHEETS LIVE DATABASE CONNECTOR
 // ============================================================================
-// EXACT SHEET COLUMNS MATCHED:
+// EXACT SHEET COLUMNS MATCHED (13 COLUMNS):
 // Col 1 (A): Participant ID
 // Col 2 (B): Name
 // Col 3 (C): Office / Company
 // Col 4 (D): Registration Date/Time
-// Col 5 (E): Booth 1
-// Col 6 (F): Booth 2
-// Col 7 (G): Booth 3
-// Col 8 (H): Survey Completed
-// Col 9 (I): Booth Completion
-// Col 10 (J): Raffle Qualified
+// Col 5 (E): Booth 1 (Booth Survey)
+// Col 6 (F): BoothQR1 (true / false)
+// Col 7 (G): Booth 2 (Booth Survey)
+// Col 8 (H): BoothQR2 (true / false)
+// Col 9 (I): Booth 3 (Booth Survey)
+// Col 10 (J): BoothQR3 (true / false)
+// Col 11 (K): Survey Completed
+// Col 12 (L): Booth Completion
+// Col 13 (M): Raffle Qualified
+// ============================================================================
+
+// ============================================================================
+// OPTIONAL: REPLICATE TO MAIN MASTER GOOGLE SHEET
+// ============================================================================
+// OPTION A: If you want every scan to write directly into your Main Google Sheet:
+// Paste the Sheet ID from its URL (between /d/ and /edit in the browser):
+var MAIN_SPREADSHEET_ID = ""; // e.g. "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+
+// OPTION B: If your Main Google Sheet already has its own Web App running:
+// Paste that existing Apps Script Web App URL here to forward all scan events:
+var FORWARD_TO_MAIN_WEBAPP_URL = ""; 
 // ============================================================================
 
 function doGet(e) {
@@ -173,7 +190,7 @@ function handleRequest(e) {
       }
     }
 
-    // Initialize exact 10 headers if sheet is empty
+    // Initialize exact 13 headers if sheet is empty
     if (partSheet.getLastRow() === 0) {
       partSheet.appendRow([
         "Participant ID",
@@ -181,13 +198,16 @@ function handleRequest(e) {
         "Office / Company",
         "Registration Date/Time",
         "Booth 1",
+        "BoothQR1",
         "Booth 2",
+        "BoothQR2",
         "Booth 3",
+        "BoothQR3",
         "Survey Completed",
         "Booth Completion",
         "Raffle Qualified"
       ]);
-      partSheet.getRange("A1:J1").setFontWeight("bold").setBackground("#0f172a").setFontColor("#38bdf8");
+      partSheet.getRange("A1:M1").setFontWeight("bold").setBackground("#0f172a").setFontColor("#38bdf8");
       partSheet.setFrozenRows(1);
     }
 
@@ -216,7 +236,7 @@ function handleRequest(e) {
     // ------------------------------------------------------------------------
     // 4. Map columns dynamically from Row 1
     // ------------------------------------------------------------------------
-    var headers = partSheet.getRange(1, 1, 1, Math.max(partSheet.getLastColumn(), 10)).getValues()[0];
+    var headers = partSheet.getRange(1, 1, 1, Math.max(partSheet.getLastColumn(), 13)).getValues()[0];
     
     function findCol(keywords, fallback) {
       for (var i = 0; i < headers.length; i++) {
@@ -235,28 +255,35 @@ function handleRequest(e) {
     var colOffice = findCol(["office", "company", "division"], 3);
     var colRegDate = findCol(["registration", "date/time", "registered"], 4);
     var colBooth1 = findCol(["booth 1", "netsec"], 5);
-    var colBooth2 = findCol(["booth 2", "tvm"], 6);
-    var colBooth3 = findCol(["booth 3", "secops"], 7);
-    var colSurvey = findCol(["survey completed", "survey"], 8);
-    var colCompletion = findCol(["booth completion", "completion", "total stamps"], 9);
-    var colRaffle = findCol(["raffle qualified", "raffle", "eligible"], 10);
+    var colBoothQR1 = findCol(["boothqr1", "booth qr 1", "boothqr 1", "qr1"], 6);
+    var colBooth2 = findCol(["booth 2", "tvm"], 7);
+    var colBoothQR2 = findCol(["boothqr2", "booth qr 2", "boothqr 2", "qr2"], 8);
+    var colBooth3 = findCol(["booth 3", "secops"], 9);
+    var colBoothQR3 = findCol(["boothqr3", "booth qr 3", "boothqr 3", "qr3"], 10);
+    var colSurvey = findCol(["survey completed", "survey"], 11);
+    var colCompletion = findCol(["booth completion", "completion", "total stamps"], 12);
+    var colRaffle = findCol(["raffle qualified", "raffle", "eligible"], 13);
 
-    // Identify current Station & its respective column
+    // Identify current Station & its respective Booth / QR columns
     var vendorId = String(data.vendorId || data.boothId || "Booth 1");
     var vendorName = String(data.vendorName || data.boothName || "Booth 1");
     var targetBoothCol = colBooth1;
-    var targetColHeader = "Booth 1";
+    var targetQrCol = colBoothQR1;
+    var targetColHeader = "BoothQR1";
 
     var vLower = (vendorId + " " + vendorName).toLowerCase();
-    if (vLower.indexOf("booth 2") !== -1 || vLower.indexOf("tvm") !== -1) {
+    if (vLower.indexOf("booth 2") !== -1 || vLower.indexOf("tvm") !== -1 || vLower.indexOf("b2") !== -1) {
       targetBoothCol = colBooth2;
-      targetColHeader = headers[colBooth2 - 1] || "Booth 2";
-    } else if (vLower.indexOf("booth 3") !== -1 || vLower.indexOf("secops") !== -1) {
+      targetQrCol = colBoothQR2;
+      targetColHeader = headers[colBoothQR2 - 1] || "BoothQR2";
+    } else if (vLower.indexOf("booth 3") !== -1 || vLower.indexOf("secops") !== -1 || vLower.indexOf("b3") !== -1) {
       targetBoothCol = colBooth3;
-      targetColHeader = headers[colBooth3 - 1] || "Booth 3";
+      targetQrCol = colBoothQR3;
+      targetColHeader = headers[colBoothQR3 - 1] || "BoothQR3";
     } else {
       targetBoothCol = colBooth1;
-      targetColHeader = headers[colBooth1 - 1] || "Booth 1";
+      targetQrCol = colBoothQR1;
+      targetColHeader = headers[colBoothQR1 - 1] || "BoothQR1";
     }
 
     var token = String(data.participantToken || data.participantId || "").trim();
@@ -283,21 +310,22 @@ function handleRequest(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 6. Check duplicate in respective booth column
+    // 6. Check duplicate in respective BoothQR column (true if already scanned)
     // ------------------------------------------------------------------------
     var isDuplicate = false;
-    var stampValue = "✓ " + Utilities.formatDate(now, Session.getScriptTimeZone() || "GMT+8", "HH:mm:ss");
 
     if (targetRow > 0) {
-      var currentCell = partSheet.getRange(targetRow, targetBoothCol).getValue();
-      if (currentCell !== "" && currentCell !== null && currentCell !== undefined) {
+      var currentQrVal = partSheet.getRange(targetRow, targetQrCol).getValue();
+      // If already true or ticked, it is a duplicate
+      if (currentQrVal === true || String(currentQrVal).toLowerCase() === "true" || currentQrVal === "✓") {
         isDuplicate = true;
       } else {
-        partSheet.getRange(targetRow, targetBoothCol).setValue(stampValue);
-        partSheet.getRange(targetRow, targetBoothCol).setBackground("#dcfce7"); // Light emerald highlight
+        // Log TRUE in BoothQR column
+        partSheet.getRange(targetRow, targetQrCol).setValue(true);
+        partSheet.getRange(targetRow, targetQrCol).setBackground("#dcfce7"); // Light emerald highlight
       }
     } else {
-      // Attendee not found: Append new participant row with initial values
+      // Attendee not found: Append new participant row with defaults
       targetRow = partSheet.getLastRow() + 1;
       var newRow = new Array(headers.length);
       for (var c = 0; c < headers.length; c++) newRow[c] = "";
@@ -306,23 +334,35 @@ function handleRequest(e) {
       newRow[colName - 1] = participantName;
       newRow[colOffice - 1] = participantOffice;
       newRow[colRegDate - 1] = timeString;
-      newRow[targetBoothCol - 1] = stampValue;
+
+      // Default all BoothQR columns to false except the scanned one
+      newRow[colBoothQR1 - 1] = false;
+      newRow[colBoothQR2 - 1] = false;
+      newRow[colBoothQR3 - 1] = false;
+
+      // Set scanned station BoothQR to true
+      newRow[targetQrCol - 1] = true;
+
       newRow[colSurvey - 1] = "NO";
       newRow[colCompletion - 1] = "1 / 3";
       newRow[colRaffle - 1] = "PENDING";
 
       partSheet.appendRow(newRow);
-      partSheet.getRange(targetRow, targetBoothCol).setBackground("#dcfce7");
+      partSheet.getRange(targetRow, targetQrCol).setBackground("#dcfce7");
     }
 
     // ------------------------------------------------------------------------
-    // 7. Calculate Booth Completion across Booth 1, Booth 2, Booth 3
+    // 7. Calculate Booth Completion across BoothQR1, BoothQR2, BoothQR3
     // ------------------------------------------------------------------------
-    var b1Val = String(partSheet.getRange(targetRow, colBooth1).getValue() || "").trim();
-    var b2Val = String(partSheet.getRange(targetRow, colBooth2).getValue() || "").trim();
-    var b3Val = String(partSheet.getRange(targetRow, colBooth3).getValue() || "").trim();
+    var qr1 = partSheet.getRange(targetRow, colBoothQR1).getValue();
+    var qr2 = partSheet.getRange(targetRow, colBoothQR2).getValue();
+    var qr3 = partSheet.getRange(targetRow, colBoothQR3).getValue();
 
-    var completedCount = (b1Val ? 1 : 0) + (b2Val ? 1 : 0) + (b3Val ? 1 : 0);
+    var isQr1 = qr1 === true || String(qr1).toLowerCase() === "true";
+    var isQr2 = qr2 === true || String(qr2).toLowerCase() === "true";
+    var isQr3 = qr3 === true || String(qr3).toLowerCase() === "true";
+
+    var completedCount = (isQr1 ? 1 : 0) + (isQr2 ? 1 : 0) + (isQr3 ? 1 : 0);
     if (completedCount === 0 && !isDuplicate) completedCount = 1;
     var isRaffleQualified = completedCount >= 3;
 
@@ -348,7 +388,79 @@ function handleRequest(e) {
     ]);
 
     // ------------------------------------------------------------------------
-    // 9. Return JSON confirmation to BoothMaster
+    // 9. Replicate to Main Master Google Sheet (if configured)
+    // ------------------------------------------------------------------------
+    if (MAIN_SPREADSHEET_ID && String(MAIN_SPREADSHEET_ID).trim() !== "") {
+      try {
+        var mainSs = SpreadsheetApp.openById(String(MAIN_SPREADSHEET_ID).trim());
+        var mainSheet = mainSs.getSheetByName("Participants") || mainSs.getSheets()[0];
+        var mainLastRow = mainSheet.getLastRow();
+        var mainHeaders = mainSheet.getRange(1, 1, 1, Math.max(mainSheet.getLastColumn(), 13)).getValues()[0];
+        var mainPData = mainLastRow > 1 ? mainSheet.getRange(2, 1, mainLastRow - 1, mainHeaders.length).getValues() : [];
+        var mainRow = -1;
+
+        for (var mr = 0; mr < mainPData.length; mr++) {
+          var mToken = String(mainPData[mr][colId - 1] || "").trim().toLowerCase();
+          if (mToken === token.toLowerCase()) {
+            mainRow = mr + 2;
+            break;
+          }
+        }
+
+        if (mainRow > 0) {
+          mainSheet.getRange(mainRow, targetQrCol).setValue(true);
+          mainSheet.getRange(mainRow, targetQrCol).setBackground("#dcfce7");
+          mainSheet.getRange(mainRow, colCompletion).setValue(completedCount + " / 3");
+          mainSheet.getRange(mainRow, colRaffle).setValue(isRaffleQualified ? "QUALIFIED 🏆" : "PENDING");
+        } else {
+          // If not in main sheet, append
+          var newMainRow = new Array(mainHeaders.length);
+          for (var mc = 0; mc < mainHeaders.length; mc++) newMainRow[mc] = "";
+          newMainRow[colId - 1] = token;
+          newMainRow[colName - 1] = participantName;
+          newMainRow[colOffice - 1] = participantOffice;
+          newMainRow[colRegDate - 1] = timeString;
+          newMainRow[colBoothQR1 - 1] = false;
+          newMainRow[colBoothQR2 - 1] = false;
+          newMainRow[colBoothQR3 - 1] = false;
+          newMainRow[targetQrCol - 1] = true;
+          newMainRow[colSurvey - 1] = "NO";
+          newMainRow[colCompletion - 1] = completedCount + " / 3";
+          newMainRow[colRaffle - 1] = isRaffleQualified ? "QUALIFIED 🏆" : "PENDING";
+          mainSheet.appendRow(newMainRow);
+        }
+      } catch (repErr) {
+        Logger.log("Main Sheet replication error: " + repErr);
+      }
+    }
+
+    if (FORWARD_TO_MAIN_WEBAPP_URL && String(FORWARD_TO_MAIN_WEBAPP_URL).trim() !== "") {
+      try {
+        UrlFetchApp.fetch(String(FORWARD_TO_MAIN_WEBAPP_URL).trim(), {
+          method: "post",
+          contentType: "text/plain;charset=utf-8",
+          payload: JSON.stringify({
+            event: "BOOTH_SCAN_REPLICATE",
+            timestamp: timeString,
+            participantId: token,
+            name: participantName,
+            office: participantOffice,
+            boothId: vendorId,
+            boothName: vendorName,
+            updatedColumn: targetColHeader,
+            qrCompleted: true,
+            completion: completedCount + " / 3",
+            raffleQualified: isRaffleQualified
+          }),
+          muteHttpExceptions: true
+        });
+      } catch (fwdErr) {
+        Logger.log("Forward to main Web App error: " + fwdErr);
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 10. Return JSON confirmation to BoothMaster
     // ------------------------------------------------------------------------
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
@@ -359,7 +471,7 @@ function handleRequest(e) {
       participantId: token,
       vendor: vendorId,
       updatedColumn: targetColHeader,
-      columnNumber: targetBoothCol,
+      columnNumber: targetQrCol,
       rowNumber: targetRow,
       sheetName: partSheet.getName(),
       completion: completedCount,
@@ -596,6 +708,29 @@ function handleRequest(e) {
                   </div>
                 )}
               </div>
+
+              {/* Connected Flow Architecture Card */}
+              <div className="p-3.5 rounded-xl bg-[#090D1A] border border-[#232D48] text-[11px] space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Aligned to Your CSAM 2026 Apps Script (13 Columns):
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-[#A2B2D2]">
+                  <div className="p-2 rounded-lg bg-[#0E1527] border border-[#1F2942]">
+                    <span className="font-bold text-cyan-300">Station QR Check-in (Logs TRUE / FALSE):</span>
+                    <div>• <code>Booth 1</code> ➔ Col F: <code>BoothQR1</code> (true)</div>
+                    <div>• <code>Booth 2</code> ➔ Col H: <code>BoothQR2</code> (true)</div>
+                    <div>• <code>Booth 3</code> ➔ Col J: <code>BoothQR3</code> (true)</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-[#0E1527] border border-[#1F2942]">
+                    <span className="font-bold text-emerald-300">Surveys & Qualification:</span>
+                    <div>• Col E, G, I: Booth 1, 2, 3 (Booth Survey)</div>
+                    <div>• Col K: Survey Completed</div>
+                    <div>• Col L: Booth Completion (e.g. 3 / 3)</div>
+                    <div>• Col M: Raffle Qualified (QUALIFIED 🏆)</div>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
@@ -604,10 +739,10 @@ function handleRequest(e) {
               <div className="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-500/30 text-cyan-200">
                 <div className="font-bold text-xs flex items-center gap-1.5">
                   <Columns className="w-4 h-4 text-cyan-400" />
-                  How BoothMaster Maps to Your Google Sheet Columns
+                  How BoothMaster Maps to Your 13 Google Sheet Columns
                 </div>
                 <p className="text-[11px] text-[#BACAE5] mt-1">
-                  When a boothmaster scans a badge, the system finds the participant row by Token/ID and writes a timestamp directly into that booth's column!
+                  When a boothmaster scans an attendee badge, BoothMaster looks up the participant by Participant ID and automatically marks <strong>true</strong> in <strong>BoothQR1</strong>, <strong>BoothQR2</strong>, or <strong>BoothQR3</strong> (default is <strong>false</strong>).
                 </p>
               </div>
 
@@ -621,18 +756,21 @@ function handleRequest(e) {
                       <th className="p-2 border-r border-[#1C253D] text-white font-bold">Col B: Name</th>
                       <th className="p-2 border-r border-[#1C253D] text-white font-bold">Col C: Office / Company</th>
                       <th className="p-2 border-r border-[#1C253D] text-[#8E9BB5]">Col D: Registration Date/Time</th>
+                      <th className="p-2 border-r border-[#1C253D] text-[#8E9BB5]">Col E: Booth 1</th>
                       <th className="p-2 border-r border-[#1C253D] text-emerald-300 font-bold bg-emerald-950/40">
-                        Col E: Booth 1 📍
+                        Col F: BoothQR1 📍
                       </th>
+                      <th className="p-2 border-r border-[#1C253D] text-[#8E9BB5]">Col G: Booth 2</th>
                       <th className="p-2 border-r border-[#1C253D] text-amber-300 font-bold bg-amber-950/40">
-                        Col F: Booth 2 📍
+                        Col H: BoothQR2 📍
                       </th>
+                      <th className="p-2 border-r border-[#1C253D] text-[#8E9BB5]">Col I: Booth 3</th>
                       <th className="p-2 border-r border-[#1C253D] text-purple-300 font-bold bg-purple-950/40">
-                        Col G: Booth 3 📍
+                        Col J: BoothQR3 📍
                       </th>
-                      <th className="p-2 border-r border-[#1C253D] text-[#8E9BB5]">Col H: Survey Completed</th>
-                      <th className="p-2 border-r border-[#1C253D] text-cyan-300 font-bold">Col I: Booth Completion</th>
-                      <th className="p-2 text-emerald-400 font-bold">Col J: Raffle Qualified</th>
+                      <th className="p-2 border-r border-[#1C253D] text-[#8E9BB5]">Col K: Survey Completed</th>
+                      <th className="p-2 border-r border-[#1C253D] text-cyan-300 font-bold">Col L: Booth Completion</th>
+                      <th className="p-2 text-emerald-400 font-bold">Col M: Raffle Qualified</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1C253D] text-[#C4D1EB]">
@@ -642,14 +780,17 @@ function handleRequest(e) {
                       <td className="p-2 border-r border-[#1C253D]">Jasmine Rivera</td>
                       <td className="p-2 border-r border-[#1C253D]">Security Ops</td>
                       <td className="p-2 border-r border-[#1C253D] text-[#7187A8]">2026-09-22 08:30:00</td>
+                      <td className="p-2 border-r border-[#1C253D] text-gray-400">Done</td>
                       <td className="p-2 border-r border-[#1C253D] bg-emerald-950/30 text-emerald-400 font-bold">
-                        ✓ 10:14:02
+                        true
                       </td>
+                      <td className="p-2 border-r border-[#1C253D] text-gray-400">Done</td>
                       <td className="p-2 border-r border-[#1C253D] bg-amber-950/30 text-amber-400 font-bold">
-                        ✓ 10:28:44
+                        true
                       </td>
+                      <td className="p-2 border-r border-[#1C253D] text-gray-400">Done</td>
                       <td className="p-2 border-r border-[#1C253D] bg-purple-950/30 text-purple-400 font-bold">
-                        ✓ 10:45:12
+                        true
                       </td>
                       <td className="p-2 border-r border-[#1C253D] text-emerald-400 font-bold">YES</td>
                       <td className="p-2 border-r border-[#1C253D] font-bold text-white">3 / 3</td>
@@ -661,14 +802,17 @@ function handleRequest(e) {
                       <td className="p-2 border-r border-[#1C253D]">Marcus Vance</td>
                       <td className="p-2 border-r border-[#1C253D]">Infra Team</td>
                       <td className="p-2 border-r border-[#1C253D] text-[#7187A8]">2026-09-22 08:45:10</td>
+                      <td className="p-2 border-r border-[#1C253D] text-gray-400">Done</td>
                       <td className="p-2 border-r border-[#1C253D] bg-emerald-950/30 text-emerald-400 font-bold">
-                        ✓ 10:18:20
+                        true
                       </td>
-                      <td className="p-2 border-r border-[#1C253D] bg-amber-950/20 text-[#475569] italic">
-                        —
+                      <td className="p-2 border-r border-[#1C253D] text-gray-500">—</td>
+                      <td className="p-2 border-r border-[#1C253D] bg-red-950/20 text-red-400 font-mono">
+                        false
                       </td>
+                      <td className="p-2 border-r border-[#1C253D] text-gray-400">Done</td>
                       <td className="p-2 border-r border-[#1C253D] bg-purple-950/30 text-purple-400 font-bold">
-                        ✓ 10:35:05
+                        true
                       </td>
                       <td className="p-2 border-r border-[#1C253D] text-[#64748b]">NO</td>
                       <td className="p-2 border-r border-[#1C253D] font-bold text-amber-300">2 / 3</td>
@@ -681,13 +825,14 @@ function handleRequest(e) {
               <div className="p-3 rounded-xl bg-[#090D1A] border border-[#232D48] text-[11px] text-[#A2B2D2] space-y-1.5">
                 <div className="font-bold text-white flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Your 10 Google Sheet Columns Match 100%:
+                  Your 13 Google Sheet Columns Match 100%:
                 </div>
                 <ul className="list-disc list-inside space-y-0.5">
                   <li><strong>Col A (Participant ID):</strong> Scanned badges look up this exact row.</li>
-                  <li><strong>Col E, F, G (Booth 1, Booth 2, Booth 3):</strong> Each station logs directly into its respective column!</li>
-                  <li><strong>Col I (Booth Completion):</strong> Recalculates total stamps (e.g. <code>3 / 3</code>).</li>
-                  <li><strong>Col J (Raffle Qualified):</strong> Automatically flips to <code>QUALIFIED 🏆</code> upon collecting all 3 stamps.</li>
+                  <li><strong>Col E, G, I (Booth 1, Booth 2, Booth 3):</strong> Reserved for Booth Surveys.</li>
+                  <li><strong>Col F, H, J (BoothQR1, BoothQR2, BoothQR3):</strong> Logged as <code>true</code> when scanned by the Boothmaster (defaults to <code>false</code>).</li>
+                  <li><strong>Col L (Booth Completion):</strong> Recalculates total completed scans (e.g. <code>3 / 3</code>).</li>
+                  <li><strong>Col M (Raffle Qualified):</strong> Flips to <code>QUALIFIED 🏆</code> upon scanning all 3 booths.</li>
                 </ul>
               </div>
             </div>

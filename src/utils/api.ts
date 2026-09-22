@@ -50,6 +50,9 @@ export interface ScanApiResponse {
   };
 }
 
+export const HARDCODED_GOOGLE_SHEETS_URL =
+  'https://script.google.com/macros/s/AKfycbxAeLqizAvH2HGjbQF0eG7rPaf0RTNE41NfC6Xob5fRJINICFsNvIETXNZj08l9DK3A/exec';
+
 const LOCAL_CONFIG_KEY = 'csam_backend_config_v2';
 const LOCAL_PENDING_KEY = 'csam_pending_scans_v2';
 const LOCAL_SCANS_KEY = 'csam_vendor_scans_prod';
@@ -61,13 +64,14 @@ function getLocalConfig(): BackendConfig {
       const parsed = JSON.parse(raw);
       const pendingRaw = localStorage.getItem(LOCAL_PENDING_KEY);
       const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
+      const effectiveUrl = parsed.databaseUrl || parsed.backendUrl || HARDCODED_GOOGLE_SHEETS_URL;
       return {
         databaseType: parsed.databaseType || 'google_sheets',
-        backendUrl: parsed.backendUrl || parsed.databaseUrl || '',
-        databaseUrl: parsed.databaseUrl || parsed.backendUrl || '',
+        backendUrl: effectiveUrl,
+        databaseUrl: effectiveUrl,
         apiKey: parsed.apiKey || '',
         authHeader: parsed.authHeader || '',
-        hasExternalBackend: !!(parsed.databaseUrl || parsed.backendUrl),
+        hasExternalBackend: true,
         builtInBackendActive: true,
         enabled: parsed.enabled !== false,
         pendingSyncCount: pending.length,
@@ -77,11 +81,11 @@ function getLocalConfig(): BackendConfig {
 
   return {
     databaseType: 'google_sheets',
-    backendUrl: '',
-    databaseUrl: '',
+    backendUrl: HARDCODED_GOOGLE_SHEETS_URL,
+    databaseUrl: HARDCODED_GOOGLE_SHEETS_URL,
     apiKey: '',
     authHeader: '',
-    hasExternalBackend: false,
+    hasExternalBackend: true,
     builtInBackendActive: true,
     enabled: true,
     pendingSyncCount: 0,
@@ -335,7 +339,7 @@ export async function recordScanWithBackend(
     };
   }
 
-  const isDuplicate = participant.completedVendors.includes(vendor.id);
+  let isDuplicate = participant.completedVendors.includes(vendor.id);
   if (!isDuplicate) {
     participant.completedVendors.push(vendor.id);
     if (isNew) {
@@ -345,8 +349,8 @@ export async function recordScanWithBackend(
     }
   }
 
-  const completionCount = participant.completedVendors.length;
-  const isRaffleQualified = completionCount >= TOTAL_STATIONS_FOR_RAFFLE;
+  let completionCount = participant.completedVendors.length;
+  let isRaffleQualified = completionCount >= TOTAL_STATIONS_FOR_RAFFLE;
 
   // Sync directly to Google Sheets if configured
   const cfg = getLocalConfig();
@@ -359,19 +363,33 @@ export async function recordScanWithBackend(
 
   if (dbUrl && cfg.enabled) {
     const partId = participant.participantId || participant.token;
+    const boothCode = vendor.token || (vendor.id.includes('2') ? 'B2' : vendor.id.includes('3') ? 'B3' : 'B1');
+    const boothNumber = vendor.id.includes('2') ? 2 : vendor.id.includes('3') ? 3 : 1;
+    const qrColumnName = `BoothQR${boothNumber}`; // e.g. "BoothQR1", "BoothQR2", "BoothQR3"
+
     const livePayload = {
+      action: 'recordBoothCheckin',
       event: 'CSAM_BOOTH_SCAN',
       timestamp: new Date().toISOString(),
+      booth: boothCode,
+      boothToken: boothCode,
+      boothNumber,
       vendorId: vendor.id,
       vendorName: vendor.name,
-      boothId: vendor.id,
+      boothId: boothCode,
       boothName: vendor.name,
-      boothColumn: vendor.id,
+      boothColumn: vendor.id, // e.g. "Booth 1" (Survey status or stamp)
+      boothQrColumn: qrColumnName, // e.g. "BoothQR1", "BoothQR2", "BoothQR3"
+      qrColumnName,
+      qrCompleted: true, // Marshals completed scan logs true
+      qrValue: true,
       participantToken: participant.token,
       participantId: partId,
+      participantIdInput: partId,
       isDuplicate,
       currentParticipant: {
         id: partId,
+        participantId: partId,
         name: participant.name,
         office: participant.office,
         completedBooths: participant.completedVendors,
@@ -394,6 +412,24 @@ export async function recordScanWithBackend(
           if (extData.updatedColumn) updatedColumn = extData.updatedColumn;
           if (extData.rowNumber) rowNumber = extData.rowNumber;
           if (extData.sheetName) sheetName = extData.sheetName;
+          
+          // CRITICAL: If the Google Sheet reports this attendee is already stamped at this booth,
+          // override duplicate flag to true so the app throws a duplicate error
+          if (extData.duplicate === true || extData.isDuplicate === true) {
+            isDuplicate = true;
+          }
+          if (extData.name) {
+            participant.name = extData.name;
+          }
+          if (extData.office) {
+            participant.office = extData.office;
+          }
+          if (typeof extData.completion === 'number') {
+            completionCount = extData.completion;
+          }
+          if (extData.raffleQualified !== undefined) {
+            isRaffleQualified = extData.raffleQualified === true || extData.raffleQualified === 'YES';
+          }
         } catch {}
       } else {
         syncError = `HTTP ${extRes.status}`;
