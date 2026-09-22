@@ -1,88 +1,37 @@
 import { VendorStation, Participant } from '../types';
 
-export const TOTAL_STATIONS_FOR_RAFFLE = 5;
-export const TOTAL_EVENT_STATIONS = 5;
+export const TOTAL_STATIONS_FOR_RAFFLE = 3;
+export const TOTAL_EVENT_STATIONS = 3;
 
 export const DEFAULT_VENDORS: VendorStation[] = [
   {
-    id: 'V1',
-    name: 'VENDOR 1 — Palo Alto Networks',
-    category: 'Next-Gen Firewall & SASE',
-    stampTitle: 'Zero-Day Shield Challenge',
-    token: 'TOKEN-VENDOR-V1-PANW',
+    id: 'Booth 1',
+    name: 'Booth 1 - Netsec',
+    category: 'Network Security & Firewall',
+    stampTitle: 'Netsec Defense Challenge',
+    token: 'TOKEN-BOOTH-1-NETSEC',
   },
   {
-    id: 'V2',
-    name: 'VENDOR 2 — CrowdStrike Falcon',
-    category: 'Endpoint Detection & Response',
-    stampTitle: 'Adversary Threat Hunt',
-    token: 'TOKEN-VENDOR-V2-CRWD',
+    id: 'Booth 2',
+    name: 'Booth2 - TVM',
+    category: 'Threat & Vulnerability Management',
+    stampTitle: 'TVM Assessment Challenge',
+    token: 'TOKEN-BOOTH-2-TVM',
   },
   {
-    id: 'V3',
-    name: 'VENDOR 3 — Cloudflare Security',
-    category: 'Edge & DDoS Mitigation',
-    stampTitle: 'Edge Defense Simulator',
-    token: 'TOKEN-VENDOR-V3-NET',
-  },
-  {
-    id: 'V4',
-    name: 'VENDOR 4 — Google Cloud Security',
-    category: 'Cloud Architecture & IAM',
-    stampTitle: 'Chronicle SIEM Blueprint',
-    token: 'TOKEN-VENDOR-V4-GOOG',
-  },
-  {
-    id: 'V5',
-    name: 'VENDOR 5 — Cisco Security',
-    category: 'Secure Access & Duo MFA',
-    stampTitle: 'Phishing Defense Lab',
-    token: 'TOKEN-VENDOR-V5-CSCO',
+    id: 'Booth 3',
+    name: 'Booth3 - SecOps',
+    category: 'Security Operations & Incident Response',
+    stampTitle: 'SecOps Triage Challenge',
+    token: 'TOKEN-BOOTH-3-SECOPS',
   },
 ];
 
-export const INITIAL_PARTICIPANTS: Participant[] = [
-  {
-    token: 'PT-9421',
-    name: 'Alex Rivera',
-    office: 'SecOps & Threat Intel — Bldg 4B',
-    completedVendors: ['V1', 'V2', 'V3'],
-  },
-  {
-    token: 'PT-3819',
-    name: 'Elena Rostova',
-    office: 'Cloud Architecture — Remote / EMEA',
-    completedVendors: ['V1'],
-  },
-  {
-    token: 'PT-7204',
-    name: 'Marcus Chen',
-    office: 'Enterprise IT & Infrastructure — Austin Hub',
-    completedVendors: ['V1', 'V2', 'V3', 'V4', 'V5'],
-  },
-  {
-    token: 'PT-5190',
-    name: 'Amina Al-Mansoor',
-    office: 'Compliance & Cyber Risk — London HQ',
-    completedVendors: [],
-  },
-  {
-    token: 'PT-8832',
-    name: 'David K. Miller',
-    office: 'Product Engineering — San Francisco',
-    completedVendors: ['V2', 'V3'],
-  },
-  {
-    token: 'PT-6311',
-    name: 'Priya Patel',
-    office: 'DevSecOps — Seattle Campus',
-    completedVendors: ['V1', 'V4', 'V5'],
-  },
-];
+export const INITIAL_PARTICIPANTS: Participant[] = [];
 
-const PARTICIPANTS_STORAGE_KEY = 'csam_vendor_participants_v1';
-const SCANS_STORAGE_KEY = 'csam_vendor_scans_v1';
-const CURRENT_VENDOR_KEY = 'csam_current_vendor_id_v1';
+const PARTICIPANTS_STORAGE_KEY = 'csam_vendor_participants_prod';
+const SCANS_STORAGE_KEY = 'csam_vendor_scans_prod';
+const CURRENT_VENDOR_KEY = 'csam_current_vendor_id_prod';
 
 export function getStoredParticipants(): Participant[] {
   try {
@@ -93,8 +42,7 @@ export function getStoredParticipants(): Participant[] {
   } catch (e) {
     console.error('Failed reading participants from storage', e);
   }
-  saveStoredParticipants(INITIAL_PARTICIPANTS);
-  return INITIAL_PARTICIPANTS;
+  return [];
 }
 
 export function saveStoredParticipants(participants: Participant[]) {
@@ -112,7 +60,7 @@ export function getStoredVendorId(): string {
       return saved;
     }
   } catch (e) {}
-  return 'V04'; // Default to VENDOR 04 as featured in sample
+  return 'Booth 1'; // Default to Booth 1 - Netsec
 }
 
 export function saveStoredVendorId(id: string) {

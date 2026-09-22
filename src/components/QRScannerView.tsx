@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode, CameraDevice } from 'html5-qrcode';
-import { Camera, Flashlight, SwitchCamera, Upload, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, Flashlight, SwitchCamera, Upload, RefreshCw, CheckCircle2, VideoOff } from 'lucide-react';
 
 interface QRScannerViewProps {
   onScanSuccess: (decodedText: string) => void;
@@ -18,6 +18,9 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
 }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const isProcessingRef = useRef<boolean>(false);
+  const lastScannedRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
+
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [torchOn, setTorchOn] = useState<boolean>(false);
@@ -25,6 +28,8 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
   const [dragOver, setDragOver] = useState<boolean>(false);
   const [scannerStatus, setScannerStatus] = useState<string>('Ready to scan');
   const [processingFile, setProcessingFile] = useState<boolean>(false);
+  const [isRestarting, setIsRestarting] = useState<boolean>(false);
+  const [scanFlash, setScanFlash] = useState<boolean>(false);
 
   // Stop scanner safely
   const stopScanner = useCallback(async () => {
@@ -37,9 +42,10 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       } catch (e) {
         console.warn('Scanner stop error', e);
       }
-      setIsScanning(false);
-      setTorchOn(false);
+      scannerRef.current = null;
     }
+    setIsScanning(false);
+    setTorchOn(false);
   }, [setIsScanning]);
 
   // Load available cameras
@@ -48,50 +54,84 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       const devices = await Html5Qrcode.getCameras();
       if (devices && devices.length > 0) {
         setCameras(devices);
-        // Prefer back camera if available
+        // Prefer back / rear camera
         const backCam = devices.find(d => 
           d.label.toLowerCase().includes('back') || 
           d.label.toLowerCase().includes('rear') || 
           d.label.toLowerCase().includes('environment')
         );
-        setSelectedCameraId(backCam ? backCam.id : devices[0].id);
+        setSelectedCameraId((prev) => prev || (backCam ? backCam.id : devices[0].id));
       }
     } catch (e) {
       // Ignore if permissions not yet granted
     }
   }, []);
 
-  useEffect(() => {
-    refreshCameras();
-    return () => {
-      stopScanner();
-    };
-  }, [refreshCameras, stopScanner]);
-
-  // Start scanning
-  const startCameraStream = async (cameraId?: string): Promise<boolean> => {
-    await stopScanner();
-
-    const elementId = 'reader';
-    const scanner = new Html5Qrcode(elementId);
-    scannerRef.current = scanner;
-
-    const config = {
-      fps: 15,
-      qrbox: { width: 240, height: 240 },
-      aspectRatio: 1.0,
-    };
-
-    const handleSuccess = (decodedText: string) => {
-      stopScanner();
-      onScanSuccess(decodedText);
-    };
-
+  // Start continuous camera stream
+  const startCameraStream = useCallback(async (cameraId?: string) => {
     try {
-      if (cameraId) {
-        await scanner.start(cameraId, config, handleSuccess, () => {});
+      setScannerStatus('Starting camera...');
+      
+      // Stop any existing instance first
+      if (scannerRef.current) {
+        try {
+          if (scannerRef.current.isScanning) {
+            await scannerRef.current.stop();
+          }
+          await scannerRef.current.clear();
+        } catch (e) {
+          // ignore cleanup errors
+        }
+        scannerRef.current = null;
+      }
+
+      // Small delay to allow mobile hardware to release
+      await new Promise((r) => setTimeout(r, 120));
+
+      const elementId = 'reader';
+      const scanner = new Html5Qrcode(elementId);
+      scannerRef.current = scanner;
+
+      const config = {
+        fps: 15,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
+      const handleSuccess = (decodedText: string) => {
+        const now = Date.now();
+        // Prevent duplicate firing while attendee holds badge or during cooldown
+        if (isProcessingRef.current) return;
+        if (lastScannedRef.current.text === decodedText && now - lastScannedRef.current.time < 3000) {
+          return;
+        }
+        if (now - lastScannedRef.current.time < 1200) {
+          return;
+        }
+
+        lastScannedRef.current = { text: decodedText, time: now };
+        isProcessingRef.current = true;
+
+        // Visual flash indication on the viewfinder
+        setScanFlash(true);
+        setScannerStatus('✓ QR Code Scanned!');
+
+        // Send to parent handler
+        onScanSuccess(decodedText);
+
+        // Reset flash and lock after 1.5 seconds WITHOUT stopping the camera
+        setTimeout(() => {
+          setScanFlash(false);
+          isProcessingRef.current = false;
+          setScannerStatus('Camera live — Ready for next attendee');
+        }, 1500);
+      };
+
+      const targetCamera = cameraId || selectedCameraId;
+      if (targetCamera) {
+        await scanner.start(targetCamera, config, handleSuccess, () => {});
       } else {
-        // Try environment first
+        // Fallback sequence: exact environment -> environment -> user
         try {
           await scanner.start(
             { facingMode: { exact: 'environment' } },
@@ -119,7 +159,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       }
 
       setIsScanning(true);
-      setScannerStatus('Align attendee QR code within the frame');
+      setScannerStatus('Camera live — Ready for attendee badges');
 
       // Check for torch capability
       try {
@@ -133,15 +173,47 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         setTorchSupported(false);
       }
 
-      // Refresh camera list after permission granted
+      // Refresh camera list after permission is granted
       refreshCameras();
-      return true;
     } catch (err: unknown) {
       const error = err as Error;
       console.error('Camera start failed', error);
       setIsScanning(false);
-      throw error;
+      setScannerStatus('Camera start failed');
+      // If error is permission or device error, trigger the modal helper
+      onRequestCameraModal();
     }
+  }, [selectedCameraId, onScanSuccess, setIsScanning, refreshCameras, onRequestCameraModal]);
+
+  // Synchronize when isScanning prop changes
+  useEffect(() => {
+    if (isScanning && !scannerRef.current?.isScanning) {
+      startCameraStream();
+    } else if (!isScanning && scannerRef.current?.isScanning) {
+      stopScanner();
+    }
+  }, [isScanning, startCameraStream, stopScanner]);
+
+  // Initial load
+  useEffect(() => {
+    refreshCameras();
+    return () => {
+      stopScanner();
+    };
+  }, [refreshCameras, stopScanner]);
+
+  // One-click Restart Camera without browser refresh
+  const handleRestartCamera = async () => {
+    setIsRestarting(true);
+    setScannerStatus('Restarting camera stream...');
+    await stopScanner();
+    setTimeout(async () => {
+      try {
+        await startCameraStream(selectedCameraId);
+      } finally {
+        setIsRestarting(false);
+      }
+    }, 250);
   };
 
   // Toggle flashlight
@@ -162,11 +234,10 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
   const handleCameraChange = async (newId: string) => {
     setSelectedCameraId(newId);
     if (isScanning) {
-      try {
-        await startCameraStream(newId);
-      } catch (e) {
-        console.error('Failed switching camera', e);
-      }
+      await stopScanner();
+      setTimeout(() => {
+        startCameraStream(newId);
+      }, 150);
     }
   };
 
@@ -184,6 +255,8 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
     try {
       const decodedText = await scannerRef.current.scanFile(file, true);
       setProcessingFile(false);
+      setScanFlash(true);
+      setTimeout(() => setScanFlash(false), 1500);
       onScanSuccess(decodedText);
     } catch (err) {
       setProcessingFile(false);
@@ -208,7 +281,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Scanner Box / Viewport */}
+      {/* Scanner Box / Viewport - Glassmorphic Viewfinder Bezel */}
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -216,18 +289,20 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`relative min-h-[260px] md:min-h-[290px] rounded-2xl bg-[#090D1A] border-2 ${
-          dragOver
-            ? 'border-[#4F7CFF] bg-[#101730]'
+        className={`relative min-h-[280px] md:min-h-[310px] rounded-2xl backdrop-blur-xl transition-all duration-300 flex flex-col items-center justify-center overflow-hidden ${
+          scanFlash
+            ? 'border-2 border-emerald-400 bg-emerald-950/40 shadow-[0_0_35px_rgba(52,211,153,0.45)]'
+            : dragOver
+            ? 'border-2 border-cyan-400 bg-[#0a1b38]/70 shadow-[0_0_30px_rgba(6,182,212,0.35)]'
             : isScanning
-            ? 'border-[#4F7CFF]/80 shadow-[0_0_25px_rgba(79,124,255,0.2)]'
-            : 'border-[#232B44]'
-        } flex flex-col items-center justify-center overflow-hidden transition-all`}
+            ? 'border-2 border-cyan-400/60 bg-[#050A17]/65 shadow-[0_0_30px_rgba(6,182,212,0.2),inset_0_0_25px_rgba(6,182,212,0.08)]'
+            : 'border-2 border-white/15 hover:border-cyan-400/40 bg-[#050A17]/60 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+        }`}
       >
-        {/* html5-qrcode DOM Target */}
+        {/* html5-qrcode DOM Target - Video stream stays 100% sharp and unblurred */}
         <div
           id="reader"
-          className={`w-full h-full min-h-[260px] rounded-2xl overflow-hidden ${
+          className={`w-full h-full min-h-[280px] rounded-2xl overflow-hidden ${
             !isScanning ? 'hidden' : 'block'
           }`}
         />
@@ -236,17 +311,54 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         {isScanning && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
             {/* Target Reticle corners */}
-            <div className="relative w-56 h-56 border-2 border-[#4F7CFF]/40 rounded-xl overflow-hidden">
-              <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-[#4F7CFF] rounded-tl" />
-              <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-[#4F7CFF] rounded-tr" />
-              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-[#4F7CFF] rounded-bl" />
-              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-[#4F7CFF] rounded-br" />
+            <div
+              className={`relative w-56 h-56 border-2 rounded-xl overflow-hidden transition-colors duration-300 ${
+                scanFlash
+                  ? 'border-emerald-400 shadow-[0_0_20px_#10b981]'
+                  : 'border-cyan-400/60 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+              }`}
+            >
+              <div
+                className={`absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 rounded-tl transition-colors ${
+                  scanFlash ? 'border-emerald-400' : 'border-cyan-400 shadow-[0_0_10px_#00E5FF]'
+                }`}
+              />
+              <div
+                className={`absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 rounded-tr transition-colors ${
+                  scanFlash ? 'border-emerald-400' : 'border-cyan-400 shadow-[0_0_10px_#00E5FF]'
+                }`}
+              />
+              <div
+                className={`absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 rounded-bl transition-colors ${
+                  scanFlash ? 'border-emerald-400' : 'border-cyan-400 shadow-[0_0_10px_#00E5FF]'
+                }`}
+              />
+              <div
+                className={`absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 rounded-br transition-colors ${
+                  scanFlash ? 'border-emerald-400' : 'border-cyan-400 shadow-[0_0_10px_#00E5FF]'
+                }`}
+              />
 
-              {/* Scanning red/blue laser beam */}
-              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#FFC700] to-transparent shadow-[0_0_12px_#FFC700] animate-scan-line" />
+              {/* Laser scanning beam with cyber gradient */}
+              {!scanFlash && (
+                <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#00E5FF] to-transparent shadow-[0_0_14px_#00E5FF] animate-scan-line" />
+              )}
+
+              {/* Scan flash confirmation */}
+              {scanFlash && (
+                <div className="absolute inset-0 bg-emerald-500/25 backdrop-blur-[2px] flex items-center justify-center animate-fade-in">
+                  <div className="px-3.5 py-1.5 rounded-full bg-emerald-600/90 text-white text-xs font-black tracking-wide flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.6)] border border-emerald-300/40">
+                    <CheckCircle2 className="w-4 h-4" />
+                    SCANNED!
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="absolute bottom-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-xs text-[#aeb8d0] border border-[#2b3554]">
-              {scannerStatus}
+
+            {/* Live Status Pill at bottom of viewport with glassmorphic backdrop */}
+            <div className="absolute bottom-3 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-xl text-xs text-white border border-white/20 flex items-center gap-2 shadow-xl">
+              <span className={`w-2 h-2 rounded-full ${scanFlash ? 'bg-emerald-400 animate-ping' : 'bg-cyan-400 animate-pulse'}`} />
+              <span className="font-medium tracking-wide">{scannerStatus}</span>
             </div>
           </div>
         )}
@@ -254,66 +366,80 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         {/* Idle View / Instructions when not scanning */}
         {!isScanning && (
           <div className="p-6 text-center flex flex-col items-center justify-center gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-[#151C31] border border-[#2B3554] flex items-center justify-center text-[#4F7CFF] shadow-inner">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/15 flex items-center justify-center text-cyan-400 shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
               {processingFile ? (
-                <div className="w-8 h-8 border-3 border-[#4F7CFF]/30 border-t-[#4F7CFF] rounded-full animate-spin" />
+                <div className="w-8 h-8 border-3 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
               ) : (
-                <Camera className="w-8 h-8" />
+                <Camera className="w-8 h-8 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" />
               )}
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">
-                {processingFile ? 'Processing QR Image...' : 'Camera Offline'}
+              <h3 className="text-base font-bold text-white tracking-wide">
+                {processingFile ? 'Processing QR Image...' : 'Camera Inactive'}
               </h3>
-              <p className="text-xs text-[#8E9BB5] mt-1 max-w-xs">
+              <p className="text-xs text-[#9BB0D3] mt-1 max-w-xs leading-relaxed">
                 {processingFile
                   ? 'Decoding participant token...'
-                  : 'Start live camera scanning or drop attendee QR ticket image here.'}
+                  : 'Tap below to launch continuous live scanning for attendee badges.'}
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Control Actions */}
+      {/* Control Actions - Glassmorphic styling */}
       <div className="flex flex-col gap-2">
         {/* Main Scan Buttons */}
         {!isScanning ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               id="liveScanBtn"
-              onClick={onRequestCameraModal}
-              className="py-3.5 px-4 rounded-xl font-bold text-sm text-white bg-[#4F7CFF] hover:bg-[#3D6CEB] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 cursor-pointer"
+              onClick={() => setIsScanning(true)}
+              className="py-3.5 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#00D2FF] to-[#0066FF] hover:from-[#26D9FF] hover:to-[#1A75FF] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/40 border border-cyan-300/30 cursor-pointer"
             >
-              <Camera className="w-4 h-4" /> Scan Live QR Video
+              <Camera className="w-4 h-4" /> Start Live Camera
             </button>
             <button
               id="photoBtn"
               onClick={() => fileInputRef.current?.click()}
-              className="py-3.5 px-4 rounded-xl font-bold text-sm text-white bg-[#202942] hover:bg-[#2A3656] border border-[#2B3554] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="py-3.5 px-4 rounded-xl font-bold text-sm text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/15 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
-              <Upload className="w-4 h-4 text-[#8E9BB5]" /> Take / Upload QR Photo
+              <Upload className="w-4 h-4 text-[#9BB0D3]" /> Take / Upload QR Photo
             </button>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <button
-              id="stopScanBtn"
-              onClick={stopScanner}
-              className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-900/30 cursor-pointer"
-            >
-              Stop Live Camera
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                id="restartCameraBtn"
+                onClick={handleRestartCamera}
+                disabled={isRestarting}
+                className="py-2.5 px-3 rounded-xl font-bold text-xs text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                title="Restart camera stream if frozen or blank"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isRestarting ? 'animate-spin' : ''}`} />
+                {isRestarting ? 'Restarting...' : 'Restart Camera'}
+              </button>
+
+              <button
+                id="stopScanBtn"
+                onClick={stopScanner}
+                className="py-2.5 px-3 rounded-xl font-bold text-xs text-rose-200 backdrop-blur-xl bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <VideoOff className="w-3.5 h-3.5 text-rose-300" />
+                Pause Camera
+              </button>
+            </div>
 
             {/* In-stream camera controls */}
-            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#151C31] border border-[#2B3554]">
+            <div className="flex items-center justify-between gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10">
               {cameras.length > 1 ? (
                 <div className="flex items-center gap-2 flex-1">
-                  <SwitchCamera className="w-4 h-4 text-[#8E9BB5] shrink-0" />
+                  <SwitchCamera className="w-4 h-4 text-[#9BB0D3] shrink-0" />
                   <select
                     value={selectedCameraId}
                     onChange={(e) => handleCameraChange(e.target.value)}
-                    className="w-full text-xs bg-[#0B1020] text-white border border-[#2B3554] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#4F7CFF]"
+                    className="w-full text-xs bg-black/50 text-white border border-white/15 rounded-lg px-2 py-1.5 focus:outline-none focus:border-cyan-400"
                   >
                     {cameras.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -323,7 +449,10 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
                   </select>
                 </div>
               ) : (
-                <span className="text-xs text-[#8E9BB5]">Camera active</span>
+                <span className="text-xs text-cyan-300 flex items-center gap-1.5 font-medium px-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  Continuous Live Scanner Active
+                </span>
               )}
 
               {torchSupported && (
@@ -331,8 +460,8 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
                   onClick={toggleTorch}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                     torchOn
-                      ? 'bg-[#FFC700] text-black'
-                      : 'bg-[#202942] text-white hover:bg-[#2B3554]'
+                      ? 'bg-[#FFC700] text-black font-bold shadow-[0_0_12px_#FFC700]'
+                      : 'backdrop-blur-md bg-white/10 text-white hover:bg-white/20 border border-white/15'
                   }`}
                   title="Toggle Flashlight"
                 >

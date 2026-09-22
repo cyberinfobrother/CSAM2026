@@ -8,7 +8,7 @@ interface StationHeaderProps {
   onSelectVendor: (vendor: VendorStation) => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
-  onOpenTestBadges: () => void;
+  onOpenTestBadges?: () => void;
   onOpenHistory: () => void;
   onOpenBackend: () => void;
   hasExternalBackend: boolean;
@@ -32,19 +32,19 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
   return (
     <div className="w-full mb-5 text-center">
       {/* Top Utility Nav */}
-      <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-[#232B44]/80">
-        <div className="flex items-center gap-2 text-left">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#4F7CFF] to-[#9D4EDD] flex items-center justify-center text-white shadow-md shadow-blue-900/40 font-black text-sm">
+      <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/10">
+        <div className="flex items-center gap-2.5 text-left">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-900/40 font-black text-sm">
             🛡️
           </div>
           <div>
             <div className="text-xs font-bold text-white tracking-wider flex items-center gap-1.5">
               <span>BOOTHMASTER</span>
-              <span className="text-[10px] font-bold text-[#FFC700] bg-[#FFC700]/10 px-1.5 py-0.5 rounded border border-[#FFC700]/30">
-                QR PORTAL
+              <span className="text-[10px] font-bold text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30">
+                CSAM 2026
               </span>
             </div>
-            <div className="text-[10px] text-[#8E9BB5]">Vendor Station Scanner</div>
+            <div className="text-[10px] text-[#9BB0D3]">Vendor Station Scanner</div>
           </div>
         </div>
 
@@ -52,10 +52,10 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
           {/* Backend Connection Launcher */}
           <button
             onClick={onOpenBackend}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer backdrop-blur-md ${
               hasExternalBackend
-                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/50'
-                : 'bg-[#151C31] text-[#8E9BB5] hover:text-white border-[#2B3554] hover:bg-[#202942]'
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60'
+                : 'bg-white/5 text-[#9BB0D3] hover:text-white border-white/15 hover:bg-white/10'
             }`}
             title="Configure Backend link and data recording"
           >
@@ -67,36 +67,38 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
           {/* Sound Toggle */}
           <button
             onClick={onToggleSound}
-            className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors ${
+            className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors backdrop-blur-md ${
               soundEnabled
-                ? 'bg-[#151C31] text-emerald-400 border-[#2B3554] hover:bg-[#202942]'
-                : 'bg-[#151C31] text-[#8E9BB5] border-[#2B3554] hover:bg-[#202942]'
+                ? 'bg-white/10 text-emerald-400 border-white/20 hover:bg-white/15'
+                : 'bg-white/5 text-[#9BB0D3] border-white/15 hover:bg-white/10'
             }`}
             title={soundEnabled ? 'Sound is Enabled' : 'Sound is Muted'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
-          {/* Test Badges Modal Launcher */}
-          <button
-            onClick={onOpenTestBadges}
-            className="px-2.5 py-1.5 rounded-xl bg-[#151C31] hover:bg-[#202942] border border-[#2B3554] text-xs font-semibold text-[#8E9BB5] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Generate test attendee QR badges"
-          >
-            <QrCode className="w-3.5 h-3.5 text-[#4F7CFF]" />
-            <span className="hidden sm:inline">Test QRs</span>
-          </button>
+          {/* Test Badges Modal Launcher (optional) */}
+          {onOpenTestBadges && (
+            <button
+              onClick={onOpenTestBadges}
+              className="px-2.5 py-1.5 rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Generate test attendee QR badges"
+            >
+              <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Test QRs</span>
+            </button>
+          )}
 
           {/* History Modal Launcher */}
           <button
             onClick={onOpenHistory}
-            className="px-2.5 py-1.5 rounded-xl bg-[#151C31] hover:bg-[#202942] border border-[#2B3554] text-xs font-semibold text-[#8E9BB5] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
             title="View scan history"
           >
             <History className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden sm:inline">Scans</span>
             {scanCount > 0 && (
-              <span className="bg-[#4F7CFF] text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="bg-cyan-500 text-black text-[10px] px-1.5 py-0.2 rounded-full font-bold shadow-sm">
                 {scanCount}
               </span>
             )}
@@ -108,7 +110,7 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
       <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
         CyberSecurity Awareness Month 2026
       </h1>
-      <div className="text-sm text-[#AEB8D0] font-medium mt-1">
+      <div className="text-xs sm:text-sm text-cyan-300/90 font-semibold mt-1 tracking-wide uppercase">
         CyberMaster Challenge Scanner
       </div>
 
@@ -116,16 +118,13 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
       <div className="relative inline-block mt-3 text-center">
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#090D1A] hover:bg-[#11172A] border border-[#2B3554] text-white text-base sm:text-lg font-bold tracking-wide transition-all shadow-inner cursor-pointer"
+          className="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-black/45 hover:bg-black/60 border border-white/15 hover:border-cyan-400/50 text-white text-base sm:text-lg font-bold tracking-wide transition-all shadow-inner cursor-pointer"
         >
-          <span className="text-[#4F7CFF] font-black">
-            {currentVendor.id}
-          </span>
-          <span className="text-white">
-            {currentVendor.name.replace(/^VENDOR \d+ — /, '')}
+          <span className="text-cyan-400 font-extrabold">
+            {currentVendor.name}
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-[#8E9BB5] group-hover:text-white transition-transform ${
+            className={`w-4 h-4 text-[#9BB0D3] group-hover:text-white transition-transform ${
               dropdownOpen ? 'rotate-180' : ''
             }`}
           />
@@ -137,8 +136,8 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
               className="fixed inset-0 z-20"
               onClick={() => setDropdownOpen(false)}
             />
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 bg-[#151C31] border border-[#2B3554] rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden animate-scale-up">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-[#8E9BB5] uppercase tracking-wider border-b border-white/5">
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden animate-scale-up">
+              <div className="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10">
                 Switch Booth Station
               </div>
               <div className="max-h-60 overflow-y-auto">
@@ -153,17 +152,16 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
                       }}
                       className={`w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors ${
                         isSelected
-                          ? 'bg-[#202942] text-white font-bold'
-                          : 'text-[#8E9BB5] hover:bg-[#1B233C] hover:text-white'
+                          ? 'bg-cyan-500/15 text-white font-bold border-l-2 border-cyan-400'
+                          : 'text-[#9BB0D3] hover:bg-white/5 hover:text-white'
                       }`}
                     >
                       <div className="truncate">
-                        <div className="text-white font-semibold flex items-center gap-1.5">
-                          <span className="text-[#4F7CFF] font-bold">{v.id}</span>
-                          <span className="truncate">{v.name.replace(/^VENDOR \d+ — /, '')}</span>
+                        <div className="text-white font-semibold flex items-center gap-1.5 text-sm">
+                          <span className={isSelected ? 'text-amber-300' : 'text-white'}>{v.name}</span>
                         </div>
-                        <div className="text-[10px] text-[#8E9BB5] truncate">
-                          {v.stampTitle}
+                        <div className="text-[11px] text-[#9BB0D3] truncate mt-0.5">
+                          {v.category} — {v.stampTitle}
                         </div>
                       </div>
                       {isSelected && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}

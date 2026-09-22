@@ -15,7 +15,6 @@ import { StationHeader } from './components/StationHeader';
 import { QRScannerView } from './components/QRScannerView';
 import { ScanResultCard } from './components/ScanResultCard';
 import { CameraModal } from './components/CameraModal';
-import { TestBadgeModal } from './components/TestBadgeModal';
 import { ScanHistoryModal } from './components/ScanHistoryModal';
 import { BackendConnectModal } from './components/BackendConnectModal';
 import {
@@ -45,7 +44,7 @@ export default function App() {
       }
     } catch (e) {}
     const storedId = getStoredVendorId();
-    return DEFAULT_VENDORS.find((v) => v.id === storedId) || DEFAULT_VENDORS[3]; // V04 default
+    return DEFAULT_VENDORS.find((v) => v.id === storedId) || DEFAULT_VENDORS[0]; // Booth 1 default
   });
 
   // Backend Integration State
@@ -56,11 +55,11 @@ export default function App() {
   });
   const [isBackendModalOpen, setIsBackendModalOpen] = useState<boolean>(false);
 
-  // Participants & History
+  // Participants & History (Clean, without mock data)
   const [participants, setParticipants] = useState<Participant[]>(() => getStoredParticipants());
   const [scans, setScans] = useState<ScanRecord[]>(() => {
     try {
-      const saved = localStorage.getItem('csam_vendor_scans_v1');
+      const saved = localStorage.getItem('csam_vendor_scans_prod');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -70,13 +69,13 @@ export default function App() {
   // Scanner state
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
+  const [manualToken, setManualToken] = useState<string>('');
 
   // Modals
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
   const [cameraModalState, setCameraModalState] = useState<ModalState>('idle');
   const [cameraModalError, setCameraModalError] = useState<string>('');
 
-  const [isTestBadgeModalOpen, setIsTestBadgeModalOpen] = useState<boolean>(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => soundFx.isEnabled());
 
@@ -94,7 +93,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('csam_vendor_scans_v1', JSON.stringify(scans));
+      localStorage.setItem('csam_vendor_scans_prod', JSON.stringify(scans));
     } catch (e) {}
   }, [scans]);
 
@@ -394,8 +393,8 @@ export default function App() {
 
   const handleScanNext = () => {
     resetScannerUI();
-    // Auto-reopen live camera or readiness
-    openCameraModal();
+    // Keep camera active and ready for next attendee
+    setIsScanning(true);
   };
 
   // Vendor stations stats for this station
@@ -403,14 +402,26 @@ export default function App() {
   const uniqueAttendees = new Set(stationScans.map((s) => s.participantToken)).size;
 
   return (
-    <div className="min-h-screen bg-[#0B1020] text-white flex flex-col items-center justify-start p-4 sm:p-6 selection:bg-[#4F7CFF] selection:text-white">
+    <div
+      className="min-h-screen relative text-white flex flex-col items-center justify-start p-4 sm:p-6 selection:bg-cyan-500 selection:text-black overflow-x-hidden"
+      style={{
+        backgroundImage: `radial-gradient(ellipse at 85% 15%, rgba(255, 140, 50, 0.15) 0%, transparent 45%), radial-gradient(ellipse at 15% 85%, rgba(0, 229, 255, 0.12) 0%, transparent 50%), url('/csam_theme_bg.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        backgroundColor: '#070C1A',
+      }}
+    >
+      {/* High-tech cyber mesh overlay with subtle dark depth */}
+      <div className="fixed inset-0 bg-[#070B18]/60 backdrop-brightness-95 pointer-events-none" />
+
       {/* Container */}
-      <div className="w-full max-w-[620px] mx-auto">
-        {/* Main Card */}
-        <div className="bg-[#151C31] border border-[#2B3554] rounded-[24px] p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.45)] relative overflow-hidden">
-          {/* Subtle glowing backdrop highlight */}
-          <div className="absolute -top-24 -right-24 w-60 h-60 bg-[#4F7CFF]/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-[#9D4EDD]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="w-full max-w-[620px] mx-auto relative z-10">
+        {/* Main Card - Glassmorphism */}
+        <div className="backdrop-blur-2xl bg-[#091126]/75 border border-white/15 rounded-[26px] p-5 sm:p-8 shadow-[0_24px_64px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.12)] relative overflow-hidden">
+          {/* Subtle glowing ambient lights matching CSAM theme */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#FF8C38]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#00E5FF]/15 rounded-full blur-3xl pointer-events-none" />
 
           {/* Station Header */}
           <StationHeader
@@ -419,7 +430,6 @@ export default function App() {
             onSelectVendor={handleSelectVendor}
             soundEnabled={soundEnabled}
             onToggleSound={handleToggleSound}
-            onOpenTestBadges={() => setIsTestBadgeModalOpen(true)}
             onOpenHistory={() => setIsHistoryModalOpen(true)}
             onOpenBackend={() => setIsBackendModalOpen(true)}
             hasExternalBackend={backendConfig.hasExternalBackend}
@@ -443,71 +453,72 @@ export default function App() {
             />
           )}
 
-          {/* Quick Testing Bar for instantaneous testing without camera */}
-          <div className="mt-6 pt-5 border-t border-[#232B44]">
+          {/* Manual Attendee Check-In (Backup for damaged/unreadable badges) */}
+          <div className="mt-5 pt-4 border-t border-white/10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-[#8E9BB5] uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#FFC700]" />
-                Interactive Attendee Simulator
+              <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+                Manual Attendee Check-In (Backup)
               </span>
-              <button
-                onClick={() => setIsTestBadgeModalOpen(true)}
-                className="text-[11px] text-[#4F7CFF] hover:underline font-semibold"
-              >
-                View Full Badges →
-              </button>
+              <span className="text-[10px] text-[#8E9BB5]">Type Token or ID</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {participants.slice(0, 3).map((p) => {
-                const stamped = p.completedVendors.includes(currentVendor.id);
-                return (
-                  <button
-                    key={p.token}
-                    onClick={() => handleScan(p.token)}
-                    className="p-2 rounded-xl bg-[#0E1424] hover:bg-[#1A233C] border border-[#232B44] text-left transition-colors text-xs flex flex-col justify-between"
-                  >
-                    <div className="font-bold text-white truncate">{p.name.split(' ')[0]}</div>
-                    <div className="flex items-center justify-between text-[10px] text-[#8E9BB5] mt-1">
-                      <span>{p.completedVendors.length}/6 done</span>
-                      <span className={stamped ? 'text-amber-400' : 'text-emerald-400 font-bold'}>
-                        {stamped ? 'Stamped' : 'Stamp'}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!manualToken.trim()) return;
+                handleScan(manualToken.trim());
+                setManualToken('');
+              }}
+              className="flex gap-2"
+            >
+              <input
+                id="manualTokenInput"
+                type="text"
+                placeholder="Enter attendee token (e.g. badge token or URL)..."
+                value={manualToken}
+                onChange={(e) => setManualToken(e.target.value)}
+                className="flex-1 backdrop-blur-md bg-black/40 border border-white/15 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#7888A6] outline-none transition-colors"
+              />
+              <button
+                id="manualSubmitBtn"
+                type="submit"
+                disabled={!manualToken.trim()}
+                className="px-4 py-2.5 rounded-xl font-bold text-xs text-white backdrop-blur-md bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
+              >
+                Verify Badge
+              </button>
+            </form>
           </div>
 
-          {/* Station Metrics Banner */}
-          <div className="mt-4 p-3 rounded-xl bg-[#090D1A]/80 border border-[#20283E] flex items-center justify-around text-center text-xs">
+          {/* Station Metrics Banner - Glassmorphic */}
+          <div className="mt-4 p-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-around text-center text-xs shadow-inner">
             <div>
-              <div className="text-base font-extrabold text-white">{stationScans.length}</div>
-              <div className="text-[10px] text-[#8E9BB5] uppercase tracking-wider">Total Scans</div>
+              <div className="text-base font-extrabold text-white tracking-tight">{stationScans.length}</div>
+              <div className="text-[10px] text-[#9BB0D3] uppercase tracking-wider font-semibold">Total Scans</div>
             </div>
-            <div className="w-px h-6 bg-[#20283E]" />
+            <div className="w-px h-6 bg-white/10" />
             <div>
-              <div className="text-base font-extrabold text-[#4F7CFF]">{uniqueAttendees}</div>
-              <div className="text-[10px] text-[#8E9BB5] uppercase tracking-wider">Unique Attendees</div>
+              <div className="text-base font-extrabold text-cyan-400 tracking-tight">{uniqueAttendees}</div>
+              <div className="text-[10px] text-[#9BB0D3] uppercase tracking-wider font-semibold">Unique Attendees</div>
             </div>
-            <div className="w-px h-6 bg-[#20283E]" />
+            <div className="w-px h-6 bg-white/10" />
             <div>
-              <div className="text-base font-extrabold text-emerald-400">
+              <div className="text-base font-extrabold text-emerald-400 tracking-tight">
                 {TOTAL_STATIONS_FOR_RAFFLE} of {TOTAL_EVENT_STATIONS}
               </div>
-              <div className="text-[10px] text-[#8E9BB5] uppercase tracking-wider">Raffle Target</div>
+              <div className="text-[10px] text-[#9BB0D3] uppercase tracking-wider font-semibold">Raffle Target</div>
             </div>
           </div>
         </div>
 
         {/* Footer info & tips */}
-        <div className="mt-4 text-center text-xs text-[#5D6B88] space-y-1">
+        <div className="mt-4 text-center text-xs text-[#8A9CBE] space-y-1">
           <p>
-            Connected to Vendor Station: <strong>{currentVendor.name}</strong> ({currentVendor.token})
+            Connected to Vendor Station: <strong className="text-white">{currentVendor.name}</strong> ({currentVendor.token})
           </p>
-          <p className="text-[11px]">
-            Fully compatible with attendee mobile web passports, physical badge QR codes, and photo uploads.
+          <p className="text-[11px] text-[#7284A5]">
+            CSAM 2026 QR Verification Portal • Compatible with mobile web passports and physical badges.
           </p>
         </div>
       </div>
@@ -521,15 +532,6 @@ export default function App() {
         onClose={() => setIsCameraModalOpen(false)}
         onGrant={handleGrantPermission}
         onUploadClick={handleTriggerPhotoUpload}
-      />
-
-      {/* Attendee Test Badges & Simulator Modal */}
-      <TestBadgeModal
-        isOpen={isTestBadgeModalOpen}
-        onClose={() => setIsTestBadgeModalOpen(false)}
-        participants={participants}
-        currentVendorId={currentVendor.id}
-        onSimulateScan={handleScan}
       />
 
       {/* Scan History & CSV Export Modal */}

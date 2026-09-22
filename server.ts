@@ -15,13 +15,11 @@ const PORT = 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Default Vendors (V1 through V5 matching Google Apps Script Code.gs REQUIRED_VENDORS)
+// Default Vendors (Booth 1, Booth 2, Booth 3 matching Google Sheets database)
 const VENDORS: Record<string, { id: string; name: string; category: string; stampTitle: string; token: string }> = {
-  'V1': { id: 'V1', name: 'VENDOR 1 — Palo Alto Networks', category: 'Next-Gen Firewall & SASE', stampTitle: 'Zero-Day Shield Challenge', token: 'TOKEN-VENDOR-V1-PANW' },
-  'V2': { id: 'V2', name: 'VENDOR 2 — CrowdStrike Falcon', category: 'Endpoint Detection & Response', stampTitle: 'Adversary Threat Hunt', token: 'TOKEN-VENDOR-V2-CRWD' },
-  'V3': { id: 'V3', name: 'VENDOR 3 — Cloudflare Security', category: 'Edge & DDoS Mitigation', stampTitle: 'Edge Defense Simulator', token: 'TOKEN-VENDOR-V3-NET' },
-  'V4': { id: 'V4', name: 'VENDOR 4 — Google Cloud Security', category: 'Cloud Architecture & IAM', stampTitle: 'Chronicle SIEM Blueprint', token: 'TOKEN-VENDOR-V4-GOOG' },
-  'V5': { id: 'V5', name: 'VENDOR 5 — Cisco Security', category: 'Secure Access & Duo MFA', stampTitle: 'Phishing Defense Lab', token: 'TOKEN-VENDOR-V5-CSCO' },
+  'Booth 1': { id: 'Booth 1', name: 'Booth 1 - Netsec', category: 'Network Security & Firewall', stampTitle: 'Netsec Defense Challenge', token: 'TOKEN-BOOTH-1-NETSEC' },
+  'Booth 2': { id: 'Booth 2', name: 'Booth2 - TVM', category: 'Threat & Vulnerability Management', stampTitle: 'TVM Assessment Challenge', token: 'TOKEN-BOOTH-2-TVM' },
+  'Booth 3': { id: 'Booth 3', name: 'Booth3 - SecOps', category: 'Security Operations & Incident Response', stampTitle: 'SecOps Triage Challenge', token: 'TOKEN-BOOTH-3-SECOPS' },
 };
 
 // In-memory persistent data store
@@ -50,40 +48,41 @@ interface ScanLog {
   syncedToExternal?: boolean;
 }
 
-const participants: Map<string, ParticipantRecord> = new Map([
-  ['PT-9421', { token: 'PT-9421', participantId: 'CSAM-001', name: 'Alex Rivera', office: 'SecOps & Threat Intel — Bldg 4B', completedVendors: ['V1', 'V2', 'V3'] }],
-  ['PT-3819', { token: 'PT-3819', participantId: 'CSAM-002', name: 'Elena Rostova', office: 'Cloud Architecture — Remote / EMEA', completedVendors: ['V1'] }],
-  ['PT-7204', { token: 'PT-7204', participantId: 'CSAM-003', name: 'Marcus Chen', office: 'Enterprise IT & Infrastructure — Austin Hub', completedVendors: ['V1', 'V2', 'V3', 'V4', 'V5'] }],
-  ['PT-5190', { token: 'PT-5190', participantId: 'CSAM-004', name: 'Amina Al-Mansoor', office: 'Compliance & Cyber Risk — London HQ', completedVendors: [] }],
-  ['PT-8832', { token: 'PT-8832', participantId: 'CSAM-005', name: 'David K. Miller', office: 'Product Engineering — San Francisco', completedVendors: ['V2', 'V3'] }],
-  ['PT-6311', { token: 'PT-6311', participantId: 'CSAM-006', name: 'Priya Patel', office: 'DevSecOps — Seattle Campus', completedVendors: ['V1', 'V4', 'V5'] }],
-]);
+const participants: Map<string, ParticipantRecord> = new Map();
 
 let scanHistory: ScanLog[] = [];
 let externalBackendUrl: string = process.env.BACKEND_WEBHOOK_URL || '';
 
-const TOTAL_REQUIRED_FOR_RAFFLE = 5;
-const TOTAL_STATIONS = 5;
+const TOTAL_REQUIRED_FOR_RAFFLE = 3;
+const TOTAL_STATIONS = 3;
 
 // Helper to resolve vendor from token or ID
 function findVendor(tokenOrId: string) {
-  if (!tokenOrId) return VENDORS['V4'];
+  if (!tokenOrId) return VENDORS['Booth 1'];
   const clean = tokenOrId.trim();
-  const normalizedKey = clean.toUpperCase().replace(/^V0/, 'V');
-  if (VENDORS[normalizedKey]) {
-    return VENDORS[normalizedKey];
-  }
+
+  // Direct match
+  if (VENDORS[clean]) return VENDORS[clean];
+
   for (const v of Object.values(VENDORS)) {
-    if (v.id.toLowerCase() === clean.toLowerCase() || v.token.toLowerCase() === clean.toLowerCase()) {
+    if (v.id.toLowerCase() === clean.toLowerCase() || v.token.toLowerCase() === clean.toLowerCase() || v.name.toLowerCase() === clean.toLowerCase()) {
       return v;
     }
   }
-  const vMatch = clean.match(/V0?([1-5])/i);
-  if (vMatch) {
-    const key = `V${vMatch[1]}`;
-    if (VENDORS[key]) return VENDORS[key];
+
+  // Keyword / alias matching
+  const lower = clean.toLowerCase();
+  if (lower.includes('netsec') || lower.includes('booth 1') || lower.includes('booth1') || lower === 'b1' || lower === 'v1') {
+    return VENDORS['Booth 1'];
   }
-  return VENDORS['V4']; // default fallback
+  if (lower.includes('tvm') || lower.includes('booth 2') || lower.includes('booth2') || lower === 'b2' || lower === 'v2') {
+    return VENDORS['Booth 2'];
+  }
+  if (lower.includes('secops') || lower.includes('booth 3') || lower.includes('booth3') || lower === 'b3' || lower === 'v3') {
+    return VENDORS['Booth 3'];
+  }
+
+  return VENDORS['Booth 1']; // default fallback
 }
 
 // ----------------- API ROUTES ----------------- //
