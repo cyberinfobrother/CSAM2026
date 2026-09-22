@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>BoothMaster QR Portal — Vendor Station Scanner</title>
+  <!-- HTML5 QR Code Scanner Library CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Canvas Confetti for Celebration CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 4px 2px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #263252;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .sub {
+      color: #aeb8d0;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .controls-top {
+      display: flex;
+      gap: 8px;
+    }
+    .icon-btn {
+      background: #151c31;
+      border: 1px solid #2b3554;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-btn:hover {
+      background: #1f2a4a;
+    }
+    .card {
+      background: #151c31;
+      border: 1px solid #2b3554;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 16px 45px rgba(0,0,0,0.3);
+      margin-bottom: 16px;
+    }
+    .station-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0e1527;
+      border: 1px solid #232d47;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+    }
+    .station-title {
+      font-weight: 800;
+      font-size: 15px;
+      color: #72a4fe;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .station-counter {
+      font-size: 13px;
+      color: #aeb8d0;
+    }
+    .station-counter strong {
+      color: #fff;
+      font-size: 15px;
+    }
+    /* Viewfinder Container */
+    #reader {
+      width: 100% !important;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #2b3554 !important;
+      background: #070b14;
+      min-height: 280px;
+    }
+    #reader video {
+      border-radius: 14px;
+      object-fit: cover;
+    }
+    #reader__dashboard_section_csr button {
+      background: #4f7cff !important;
+      color: #fff !important;
+      border: 0 !important;
+      padding: 8px 16px !important;
+      border-radius: 8px !important;
+      font-weight: bold !important;
+      cursor: pointer !important;
+      margin: 6px !important;
+    }
+    #reader__status_span {
+      color: #aeb8d0 !important;
+      font-size: 12px !important;
+    }
+    /* Scanner Toolbar */
+    .scanner-tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 0;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-primary { background: #4f7cff; color: #fff; }
+    .btn-primary:hover { background: #3c6be8; }
+    .btn-secondary { background: #1c2642; border: 1px solid #2f3e66; color: #fff; }
+    .btn-secondary:hover { background: #263458; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Result Cards */
+    .outcome-box {
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 16px;
+      animation: popIn 0.25s ease-out;
+      display: none;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .outcome-success {
+      background: #11281e;
+      border: 1px solid #1f5e3f;
+      color: #a8f2c3;
+    }
+    .outcome-duplicate {
+      background: #2d2410;
+      border: 1px solid #6b511d;
+      color: #ffd889;
+    }
+    .outcome-error {
+      background: #3a161f;
+      border: 1px solid #732637;
+      color: #ffb8c2;
+    }
+    .outcome-title {
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .outcome-name {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 4px 0 2px 0;
+    }
+    .outcome-office {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+    }
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .pill-qualified {
+      background: #173d2a;
+      color: #a8f2c3;
+      border: 1px solid #2b7a50;
+    }
+    .pill-pending {
+      background: #202b44;
+      color: #9cb2db;
+      border: 1px solid #33446b;
+    }
+
+    /* Manual Input Section */
+    .manual-box {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #232d47;
+      display: none;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    input {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #394563;
+      background: #0e1527;
+      color: #fff;
+      font-size: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4f7cff;
+    }
+
+    /* History Table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 10px;
+      border-radius: 12px;
+      border: 1px solid #232d47;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    th {
+      background: #10172a;
+      color: #aeb8d0;
+      padding: 10px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 10px 12px;
+      border-top: 1px solid #1e2945;
+      color: #e2e8f0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: #aeb8d0;
+      font-size: 13px;
+    }
+    .error-screen {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    
+    <!-- Top Header Bar -->
+    <div class="header">
+      <div class="brand">
+        <div class="logo-badge">🛡️</div>
+        <div>
+          <h1>CyberSecurity Awareness Month</h1>
+          <div class="sub">Vendor Challenge Verification Portal</div>
+        </div>
+      </div>
+      <div class="controls-top">
+        <button id="soundToggleBtn" class="icon-btn" onclick="toggleSound()">
+          <span id="soundIcon">🔊</span> Sound
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Screen (Shown if invalid token or failed auth) -->
+    <div id="authErrorCard" class="card error-screen" style="display: none;">
+      <div class="error-icon">⚠️</div>
+      <h2 style="margin: 0 0 8px; color: #ffb8c2;">Invalid Vendor Station</h2>
+      <p id="authErrorMessage" style="color: #cbd5e1; font-size: 14px; margin: 0 0 16px;">
+        Missing or unauthorized vendor token. Please use the personalized vendor link generated by the event organizer.
+      </p>
+      <div style="font-size: 12px; color: #aeb8d0; background: #0e1527; padding: 12px; border-radius: 8px; border: 1px solid #232d47; word-break: break-all;">
+        Expected URL format: <br><code>https://.../exec?mode=vendor&t=YOUR_SECRET_TOKEN</code>
+      </div>
+    </div>
+
+    <!-- Main Active Vendor Station Card -->
+    <div id="mainCard" class="card">
+      
+      <!-- Station Banner -->
+      <div class="station-bar">
+        <div class="station-title">
+          <span id="stationBadge">📍 Connecting...</span>
+          <span id="stationVendorName" style="color: #fff; font-size: 13px; font-weight: normal;"></span>
+        </div>
+        <div class="station-counter">
+          Scanned: <strong id="scanCount">0</strong>
+        </div>
+      </div>
+
+      <!-- Live QR Scanner Viewport -->
+      <div id="reader"></div>
+
+      <!-- Scanner Controls -->
+      <div class="scanner-tools">
+        <button id="scannerToggleBtn" class="btn btn-secondary" onclick="toggleCamera()">
+          📷 Pause Camera
+        </button>
+        <button class="btn btn-secondary" onclick="toggleManualDrawer()">
+          ⌨️ Manual Code
+        </button>
+      </div>
+
+      <!-- Manual Input Drawer -->
+      <div id="manualDrawer" class="manual-box">
+        <label style="font-size: 12px; font-weight: bold; color: #aeb8d0;">MANUAL ATTENDEE CHECK-IN (Paste QR URL or Token)</label>
+        <div class="input-row">
+          <input id="manualTokenInput" placeholder="e.g. PT-9421 or ?mode=register&p=..." onkeydown="if(event.key==='Enter')submitManualScan()">
+          <button class="btn btn-primary" onclick="submitManualScan()" id="manualSubmitBtn">Verify</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Scan Result Feedback -->
+      <div id="scanOutcome" class="outcome-box">
+        <div class="outcome-title" id="outcomeTitle"></div>
+        <div class="outcome-name" id="outcomeName"></div>
+        <div class="outcome-office" id="outcomeOffice"></div>
+        <div class="stats-row">
+          <span id="outcomeProgress" style="font-size: 13px; font-weight: bold;"></span>
+          <span id="outcomeRaffleBadge" class="pill"></span>
+          <span id="outcomeIdBadge" style="font-size: 12px; color: #aeb8d0; margin-left: auto; font-family: monospace;"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Station Scan History Card -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 800;">Station Check-In History</h3>
+        <span style="font-size: 12px; color: #aeb8d0;" id="historyTotalLabel">0 records</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Participant</th>
+              <th>Office</th>
+              <th>Progress</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr>
+              <td colspan="5" class="empty-state">No scans recorded yet at this station.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Injected by Google Apps Script doGet() template evaluation:
+    const VENDOR_TOKEN = <?!= JSON.stringify(vendorToken) ?>;
+
+    let html5QrCode = null;
+    let isCameraRunning = false;
+    let isProcessing = false;
+    let soundEnabled = true;
+    let currentVendor = '';
+    let scanCount = 0;
+    const historyItems = [];
+
+    // --- Web Audio API Chimes ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playChime(type) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'success') {
+          // Cheerful ascending major triad
+          [523.25, 659.25, 783.99].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0.12, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.23);
+          });
+        } else if (type === 'duplicate') {
+          // Warning double tone
+          [440, 370].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+            gain.gain.setValueAtTime(0.14, now + idx * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.18);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.12);
+            osc.stop(now + idx * 0.12 + 0.19);
+          });
+        } else if (type === 'fanfare') {
+          // Raffle qualified celebration fanfare
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.1);
+            osc.stop(now + idx * 0.1 + 0.36);
+          });
+        } else if (type === 'error') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(190, now);
+          osc.frequency.linearRampToValueAtTime(140, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.23);
+        }
+      } catch (e) {
+        console.warn('Audio feedback failed:', e);
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
+    }
+
+    // --- Initialization & Station Authentication ---
+    function init() {
+      if (!VENDOR_TOKEN) {
+        showAuthError('Missing vendor station token (?mode=vendor&t=...). Please use the personalized vendor link provided by the event coordinator.');
+        return;
+      }
+
+      // Check if running inside Google Apps Script iframe
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(onStationValidated)
+          .withFailureHandler(onStationAuthFailed)
+          .validateVendorStation(VENDOR_TOKEN);
+      } else {
+        // Fallback for standalone/local testing
+        console.warn('google.script.run not found, running in standalone preview mode.');
+        onStationValidated({ ok: true, vendor: 'V1' });
+      }
+    }
+
+    function showAuthError(msg) {
+      document.getElementById('mainCard').style.display = 'none';
+      document.getElementById('authErrorCard').style.display = 'block';
+      document.getElementById('authErrorMessage').textContent = msg;
+    }
+
+    function onStationAuthFailed(err) {
+      showAuthError(err.message || 'Unauthorized vendor station. This station token is not valid.');
+    }
+
+    function onStationValidated(res) {
+      currentVendor = res.vendor || 'V1';
+      document.getElementById('stationBadge').textContent = '📍 STATION ' + currentVendor;
+      document.getElementById('stationVendorName').textContent = '— Challenge Ready';
+      startCamera();
+    }
+
+    // --- QR Scanner Lifecycle ---
+    function startCamera() {
+      html5QrCode = new Html5Qrcode('reader');
+      const config = {
+        fps: 10,
+        qrbox: { width: 240, height: 240 },
+        aspectRatio: 1.0
+      };
+
+      html5QrCode.start(
+        { facingMode: 'environment' },
+        config,
+        onQrCodeScanned,
+        function (errorMessage) {
+          // Ignored per-frame search noise
+        }
+      ).then(() => {
+        isCameraRunning = true;
+        document.getElementById('scannerToggleBtn').textContent = '📷 Pause Camera';
+      }).catch(err => {
+        console.warn('Camera autostart failed, switching to manual mode:', err);
+        isCameraRunning = false;
+        document.getElementById('scannerToggleBtn').textContent = '📷 Start Camera';
+        document.getElementById('manualDrawer').style.display = 'block';
+      });
+    }
+
+    function toggleCamera() {
+      if (!html5QrCode) return;
+      if (isCameraRunning) {
+        html5QrCode.stop().then(() => {
+          isCameraRunning = false;
+          document.getElementById('scannerToggleBtn').textContent = '📷 Start Camera';
+        });
+      } else {
+        startCamera();
+      }
+    }
+
+    function toggleManualDrawer() {
+      const drawer = document.getElementById('manualDrawer');
+      drawer.style.display = drawer.style.display === 'block' ? 'none' : 'block';
+      if (drawer.style.display === 'block') {
+        document.getElementById('manualTokenInput').focus();
+      }
+    }
+
+    // --- QR Token Extraction & Verification ---
+    function extractToken(decodedText) {
+      if (!decodedText) return '';
+      let text = decodedText.trim();
+      // If URL formatted: https://script.google.com/.../exec?mode=register&p=CSAM_TOKEN
+      try {
+        if (text.includes('?')) {
+          const params = new URLSearchParams(text.split('?')[1]);
+          if (params.has('p')) return params.get('p');
+          if (params.has('token')) return params.get('token');
+        }
+      } catch (e) {}
+      return text;
+    }
+
+    function onQrCodeScanned(decodedText) {
+      if (isProcessing) return;
+      const participantToken = extractToken(decodedText);
+      if (!participantToken) return;
+
+      processScan(participantToken);
+    }
+
+    function submitManualScan() {
+      const input = document.getElementById('manualTokenInput');
+      const raw = input.value.trim();
+      if (!raw) return;
+      const participantToken = extractToken(raw);
+      input.value = '';
+      processScan(participantToken);
+    }
+
+    function processScan(participantToken) {
+      isProcessing = true;
+
+      // Show temporary processing state
+      const outcome = document.getElementById('scanOutcome');
+      outcome.className = 'outcome-box';
+      outcome.style.display = 'block';
+      outcome.style.border = '1px solid #4f7cff';
+      outcome.style.background = '#151c31';
+      document.getElementById('outcomeTitle').innerHTML = '⏳ Verifying Attendee...';
+      document.getElementById('outcomeName').textContent = 'Contacting event server';
+      document.getElementById('outcomeOffice').textContent = 'Please hold QR code steady';
+      document.getElementById('outcomeProgress').textContent = '';
+      document.getElementById('outcomeRaffleBadge').style.display = 'none';
+      document.getElementById('outcomeIdBadge').textContent = '';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(handleScanResult)
+          .withFailureHandler(handleScanError)
+          .recordVendorScan(VENDOR_TOKEN, participantToken);
+      } else {
+        // Standalone mock response for preview/fallback
+        setTimeout(() => {
+          handleScanResult({
+            ok: true,
+            duplicate: false,
+            participantId: 'CSAM-' + Math.floor(100 + Math.random() * 900),
+            name: 'Alex Rivera',
+            office: 'SecOps & Cloud Engineering',
+            vendor: currentVendor,
+            completion: 5,
+            total: 5,
+            raffleQualified: true
+          });
+        }, 600);
+      }
+    }
+
+    function handleScanResult(res) {
+      const outcome = document.getElementById('scanOutcome');
+      outcome.style.display = 'block';
+
+      const isDup = !!res.duplicate;
+      outcome.className = 'outcome-box ' + (isDup ? 'outcome-duplicate' : 'outcome-success');
+
+      if (isDup) {
+        document.getElementById('outcomeTitle').innerHTML = '⚠️ Already Completed';
+        playChime('duplicate');
+      } else {
+        document.getElementById('outcomeTitle').innerHTML = '✅ Passport Stamp Awarded!';
+        scanCount++;
+        document.getElementById('scanCount').textContent = scanCount;
+
+        if (res.raffleQualified) {
+          playChime('fanfare');
+          triggerConfetti();
+        } else {
+          playChime('success');
+        }
+      }
+
+      document.getElementById('outcomeName').textContent = res.name || 'Participant';
+      document.getElementById('outcomeOffice').textContent = res.office || '';
+      document.getElementById('outcomeProgress').textContent = 'Total Progress: ' + (res.completion || 0) + '/' + (res.total || 5);
+      
+      const raffleBadge = document.getElementById('outcomeRaffleBadge');
+      raffleBadge.style.display = 'inline-flex';
+      if (res.raffleQualified) {
+        raffleBadge.className = 'pill pill-qualified';
+        raffleBadge.textContent = '🏆 RAFFLE QUALIFIED';
+      } else {
+        raffleBadge.className = 'pill pill-pending';
+        raffleBadge.textContent = 'IN PROGRESS';
+      }
+
+      document.getElementById('outcomeIdBadge').textContent = res.participantId || '';
+
+      // Add to Station Scan History table
+      addHistoryRecord(res, isDup);
+
+      // Reset throttle lock after 2.5 seconds
+      setTimeout(() => {
+        isProcessing = false;
+      }, 2500);
+    }
+
+    function handleScanError(err) {
+      playChime('error');
+      const outcome = document.getElementById('scanOutcome');
+      outcome.className = 'outcome-box outcome-error';
+      outcome.style.display = 'block';
+      document.getElementById('outcomeTitle').innerHTML = '❌ Scan Rejected';
+      document.getElementById('outcomeName').textContent = err.message || 'Participant QR is not registered';
+      document.getElementById('outcomeOffice').textContent = 'Ask attendee to refresh their pass or verify at organizer helpdesk';
+      document.getElementById('outcomeProgress').textContent = '';
+      document.getElementById('outcomeRaffleBadge').style.display = 'none';
+      document.getElementById('outcomeIdBadge').textContent = '';
+
+      setTimeout(() => {
+        isProcessing = false;
+      }, 2000);
+    }
+
+    function addHistoryRecord(res, isDup) {
+      const tbody = document.getElementById('historyTableBody');
+      if (historyItems.length === 0) {
+        tbody.innerHTML = '';
+      }
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      historyItems.unshift({ res, isDup, timeStr });
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="color:#aeb8d0; font-family:monospace;">${timeStr}</td>
+        <td><strong>${escapeHtml(res.name || res.participantId)}</strong><br><span style="font-size:11px; color:#8ba0c8;">${escapeHtml(res.participantId || '')}</span></td>
+        <td style="color:#cbd5e1; font-size:12px;">${escapeHtml(res.office || '—')}</td>
+        <td>${res.completion || 0}/${res.total || 5}</td>
+        <td>
+          <span class="pill ${isDup ? 'pill-pending' : 'pill-qualified'}" style="font-size:11px; padding:3px 8px;">
+            ${isDup ? 'DUPLICATE' : 'AWARDED'}
+          </span>
+        </td>
+      `;
+      tbody.insertBefore(tr, tbody.firstChild);
+      document.getElementById('historyTotalLabel').textContent = historyItems.length + ' records';
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 75,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    // Auto-boot on load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

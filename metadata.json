@@ -1,0 +1,10 @@
+{
+  "name": "BoothMaster QR Portal",
+  "description": "A high-performance vendor portal scanner for reading participant QR codes, recording event challenge check-ins, and tracking raffle qualifications.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
