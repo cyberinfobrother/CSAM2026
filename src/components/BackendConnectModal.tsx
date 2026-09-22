@@ -125,14 +125,27 @@ export const BackendConnectModal: React.FC<BackendConnectModalProps> = ({
 // Col 10 (J): Raffle Qualified
 // ============================================================================
 
+function doGet(e) {
+  return handleRequest(e);
+}
+
 function doPost(e) {
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
   var lock = LockService.getScriptLock();
   // Wait up to 12 seconds for concurrent scans to prevent collision
   lock.tryLock(12000);
 
   try {
-    var raw = e.postData.contents;
-    var data = JSON.parse(raw);
+    var raw = (e && e.postData && e.postData.contents) ? e.postData.contents : null;
+    var data = {};
+    if (raw) {
+      try { data = JSON.parse(raw); } catch (err) { data = {}; }
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    }
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // ------------------------------------------------------------------------
