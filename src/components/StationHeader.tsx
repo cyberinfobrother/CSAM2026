@@ -13,6 +13,7 @@ interface StationHeaderProps {
   onOpenBackend: () => void;
   hasExternalBackend: boolean;
   databaseType?: string;
+  databaseUrl?: string;
   pendingSyncCount?: number;
   scanCount: number;
 }
@@ -28,6 +29,7 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
   onOpenBackend,
   hasExternalBackend,
   databaseType,
+  databaseUrl,
   pendingSyncCount,
   scanCount,
 }) => {
@@ -35,6 +37,7 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
 
   const getDbLabel = () => {
     if (!hasExternalBackend) return 'Local DB';
+    if (databaseUrl?.includes('workers.dev')) return 'Worker Online';
     if (databaseType === 'google_sheets') return 'Sheets Live';
     if (databaseType === 'supabase') return 'Supabase Live';
     return 'Live DB';

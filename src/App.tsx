@@ -450,6 +450,7 @@ export default function App() {
             onOpenBackend={() => setIsBackendModalOpen(true)}
             hasExternalBackend={backendConfig.hasExternalBackend}
             databaseType={backendConfig.databaseType}
+            databaseUrl={backendConfig.databaseUrl}
             pendingSyncCount={backendConfig.pendingSyncCount}
             scanCount={stationScans.length}
           />

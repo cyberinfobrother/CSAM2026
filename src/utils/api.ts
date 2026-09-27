@@ -53,6 +53,9 @@ export interface ScanApiResponse {
 export const HARDCODED_GOOGLE_SHEETS_URL =
   'https://script.google.com/macros/s/AKfycbxAeLqizAvH2HGjbQF0eG7rPaf0RTNE41NfC6Xob5fRJINICFsNvIETXNZj08l9DK3A/exec';
 
+export const LIVE_CLOUDFLARE_WORKER_URL =
+  'https://csam2026.cyber-infobro.workers.dev/';
+
 const LOCAL_CONFIG_KEY = 'csam_backend_config_v2';
 const LOCAL_PENDING_KEY = 'csam_pending_scans_v2';
 const LOCAL_SCANS_KEY = 'csam_vendor_scans_prod';
@@ -64,7 +67,7 @@ function getLocalConfig(): BackendConfig {
       const parsed = JSON.parse(raw);
       const pendingRaw = localStorage.getItem(LOCAL_PENDING_KEY);
       const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
-      const effectiveUrl = parsed.databaseUrl || parsed.backendUrl || HARDCODED_GOOGLE_SHEETS_URL;
+      const effectiveUrl = parsed.databaseUrl || parsed.backendUrl || LIVE_CLOUDFLARE_WORKER_URL;
       return {
         databaseType: parsed.databaseType || 'google_sheets',
         backendUrl: effectiveUrl,
@@ -81,8 +84,8 @@ function getLocalConfig(): BackendConfig {
 
   return {
     databaseType: 'google_sheets',
-    backendUrl: HARDCODED_GOOGLE_SHEETS_URL,
-    databaseUrl: HARDCODED_GOOGLE_SHEETS_URL,
+    backendUrl: LIVE_CLOUDFLARE_WORKER_URL,
+    databaseUrl: LIVE_CLOUDFLARE_WORKER_URL,
     apiKey: '',
     authHeader: '',
     hasExternalBackend: true,
@@ -254,11 +257,12 @@ export async function testBackendConnection(
       // Return raw response text
     }
 
-    if (json && (json.success || json.ok || json.status === 'LIVE_CONNECTED')) {
+    if (json && (json.success || json.ok || json.status === 'LIVE_CONNECTED' || json.status === 'ONLINE' || json.googleScriptConfigured)) {
+      const isCFWorker = Boolean(json.service?.includes('Worker') || json.status === 'ONLINE');
       return {
         success: true,
         status: directRes.status,
-        message: json.message || 'Connected to Google Sheets successfully (Direct Cloudflare Sync)!',
+        message: json.message || (isCFWorker ? '⚡ Cloudflare Worker is ONLINE & Proxying to Google Sheets!' : 'Connected to Google Sheets successfully (Direct Sync)!'),
         latencyMs: latency,
         response: json,
       };
@@ -268,7 +272,7 @@ export async function testBackendConnection(
       return {
         success: true,
         status: directRes.status,
-        message: 'Google Sheets responded with HTTP 200.',
+        message: 'Endpoint responded with HTTP 200 OK.',
         latencyMs: latency,
         response: json || text,
       };
@@ -277,14 +281,30 @@ export async function testBackendConnection(
     return {
       success: false,
       status: directRes.status,
-      message: `Google Sheets returned status ${directRes.status}. Make sure Apps Script deployment access is set to 'Anyone'.`,
+      message: `Endpoint returned status ${directRes.status}. Make sure Apps Script deployment access is set to 'Anyone' or check Cloudflare Worker settings.`,
       latencyMs: latency,
       response: json || text,
     };
   } catch (err: any) {
+    try {
+      const getRes = await fetch(targetUrl, { method: 'GET' });
+      if (getRes.ok) {
+        const getJson = await getRes.json();
+        if (getJson.status === 'ONLINE' || getJson.service) {
+          return {
+            success: true,
+            status: getRes.status,
+            message: '⚡ Cloudflare Worker is ONLINE and healthy! Ready to proxy scans to Google Sheets.',
+            latencyMs: Date.now() - start,
+            response: getJson,
+          };
+        }
+      }
+    } catch (_) {}
+
     return {
       success: false,
-      message: `Direct Google Sheets test error: ${err?.message || 'Network error'}. Verify that the Google Apps Script is deployed as Web App with "Who has access: Anyone".`,
+      message: `Connection error: ${err?.message || 'Network error'}. Verify that the Google Apps Script or Cloudflare Worker is deployed with public access.`,
       latencyMs: Date.now() - start,
       error: String(err),
     };
