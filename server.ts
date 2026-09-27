@@ -343,13 +343,13 @@ app.post('/api/vendor/scan', async (req, res) => {
     const qrCol = `BoothQR${boothNum}`;
 
     const liveDbPayload = {
-      action: 'recordBoothCheckin',
+      action: 'qr_checkin',
       event: 'CSAM_BOOTH_SCAN',
       timestamp: new Date().toISOString(),
       booth: boothCode,
       boothToken: boothCode,
       boothNumber: boothNum,
-      vendorToken: vendor.token,
+      vendorToken: vendor.token || boothCode,
       vendorId: vendor.id,
       vendorName: vendor.name,
       boothId: boothCode,

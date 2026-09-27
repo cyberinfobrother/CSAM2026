@@ -17,6 +17,10 @@ import {
   Sparkles,
   Wifi,
   FileSpreadsheet,
+  Cloud,
+  Terminal,
+  ArrowRightLeft,
+  ShieldCheck,
 } from 'lucide-react';
 import { BackendConfig, BackendTestResult, syncPendingScans, HARDCODED_GOOGLE_SHEETS_URL } from '../utils/api';
 import { DatabaseType, DatabaseConfig } from '../types';
@@ -50,7 +54,9 @@ export const BackendConnectModal: React.FC<BackendConnectModalProps> = ({
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<BackendTestResult | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'settings' | 'script' | 'sheet_preview' | 'logs'>('settings');
+  const [copiedWorkerCode, setCopiedWorkerCode] = useState(false);
+  const [copiedWranglerCode, setCopiedWranglerCode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'settings' | 'script' | 'sheet_preview' | 'worker' | 'logs'>('settings');
 
   if (!isOpen) return null;
 
@@ -74,7 +80,7 @@ export const BackendConnectModal: React.FC<BackendConnectModalProps> = ({
 
   const handleTest = async () => {
     if (!urlInput.trim()) {
-      alert('Please enter a Google Sheet Web App URL first.');
+      alert('Please enter a Google Sheet Web App URL or Cloudflare Worker URL first.');
       return;
     }
     setIsTesting(true);
@@ -120,26 +126,14 @@ export const BackendConnectModal: React.FC<BackendConnectModalProps> = ({
 // Col 3 (C): Office / Company
 // Col 4 (D): Registration Date/Time
 // Col 5 (E): Booth 1 (Booth Survey)
-// Col 6 (F): BoothQR1 (true / false)
+// Col 6 (F): BoothQR1 (true / false)  <--- Logged TRUE on B1 scan
 // Col 7 (G): Booth 2 (Booth Survey)
-// Col 8 (H): BoothQR2 (true / false)
+// Col 8 (H): BoothQR2 (true / false)  <--- Logged TRUE on B2 scan
 // Col 9 (I): Booth 3 (Booth Survey)
-// Col 10 (J): BoothQR3 (true / false)
+// Col 10 (J): BoothQR3 (true / false) <--- Logged TRUE on B3 scan
 // Col 11 (K): Survey Completed
-// Col 12 (L): Booth Completion
-// Col 13 (M): Raffle Qualified
-// ============================================================================
-
-// ============================================================================
-// OPTIONAL: REPLICATE TO MAIN MASTER GOOGLE SHEET
-// ============================================================================
-// OPTION A: If you want every scan to write directly into your Main Google Sheet:
-// Paste the Sheet ID from its URL (between /d/ and /edit in the browser):
-var MAIN_SPREADSHEET_ID = ""; // e.g. "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-
-// OPTION B: If your Main Google Sheet already has its own Web App running:
-// Paste that existing Apps Script Web App URL here to forward all scan events:
-var FORWARD_TO_MAIN_WEBAPP_URL = ""; 
+// Col 12 (L): Booth Completion (e.g. "1 / 3", "2 / 3", "3 / 3")
+// Col 13 (M): Raffle Qualified ("QUALIFIED 🏆" / "PENDING")
 // ============================================================================
 
 function doGet(e) {
@@ -168,7 +162,7 @@ function handleRequest(e) {
     // ------------------------------------------------------------------------
     // 1. Health check & handshake ping
     // ------------------------------------------------------------------------
-    if (data.action === "validateVendorStation" || data.ping === "test-handshake") {
+    if (data.action === "validateVendorStation" || data.ping === "test-handshake" || data.action === "ping") {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
         status: "LIVE_CONNECTED",
@@ -219,7 +213,7 @@ function handleRequest(e) {
       logSheet = ss.insertSheet("Scan_Logs");
       logSheet.appendRow([
         "Timestamp",
-        "Booth ID",
+        "Booth Token",
         "Booth Name",
         "Participant ID",
         "Name",
@@ -265,18 +259,18 @@ function handleRequest(e) {
     var colRaffle = findCol(["raffle qualified", "raffle", "eligible"], 13);
 
     // Identify current Station & its respective Booth / QR columns
-    var vendorId = String(data.vendorId || data.boothId || "Booth 1");
-    var vendorName = String(data.vendorName || data.boothName || "Booth 1");
+    var boothToken = String(data.vendorToken || data.boothToken || data.boothId || data.vendorId || "B1").trim();
+    var vendorName = String(data.vendorName || data.boothName || (boothToken === "B2" ? "Booth 2" : boothToken === "B3" ? "Booth 3" : "Booth 1"));
     var targetBoothCol = colBooth1;
     var targetQrCol = colBoothQR1;
     var targetColHeader = "BoothQR1";
 
-    var vLower = (vendorId + " " + vendorName).toLowerCase();
-    if (vLower.indexOf("booth 2") !== -1 || vLower.indexOf("tvm") !== -1 || vLower.indexOf("b2") !== -1) {
+    var vLower = (boothToken + " " + vendorName).toLowerCase();
+    if (vLower.indexOf("b2") !== -1 || vLower.indexOf("booth 2") !== -1 || vLower.indexOf("tvm") !== -1) {
       targetBoothCol = colBooth2;
       targetQrCol = colBoothQR2;
       targetColHeader = headers[colBoothQR2 - 1] || "BoothQR2";
-    } else if (vLower.indexOf("booth 3") !== -1 || vLower.indexOf("secops") !== -1 || vLower.indexOf("b3") !== -1) {
+    } else if (vLower.indexOf("b3") !== -1 || vLower.indexOf("booth 3") !== -1 || vLower.indexOf("secops") !== -1) {
       targetBoothCol = colBooth3;
       targetQrCol = colBoothQR3;
       targetColHeader = headers[colBoothQR3 - 1] || "BoothQR3";
@@ -286,7 +280,14 @@ function handleRequest(e) {
       targetColHeader = headers[colBoothQR1 - 1] || "BoothQR1";
     }
 
-    var token = String(data.participantToken || data.participantId || "").trim();
+    // Read Participant ID from incoming payload
+    var token = String(data.participantId || data.participantToken || data.scannedQrData || data.token || "").trim();
+    // Parse URL if raw QR was a URL link
+    if (token.indexOf("http://") === 0 || token.indexOf("https://") === 0) {
+      var match = token.match(/[?&](?:p|participantId|id|token)=([^&]+)/);
+      if (match && match[1]) token = decodeURIComponent(match[1]);
+    }
+
     var now = new Date();
     var timeString = Utilities.formatDate(now, Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd HH:mm:ss");
 
@@ -376,7 +377,7 @@ function handleRequest(e) {
     // ------------------------------------------------------------------------
     logSheet.appendRow([
       timeString,
-      vendorId,
+      boothToken,
       vendorName,
       token,
       participantName,
@@ -388,88 +389,17 @@ function handleRequest(e) {
     ]);
 
     // ------------------------------------------------------------------------
-    // 9. Replicate to Main Master Google Sheet (if configured)
-    // ------------------------------------------------------------------------
-    if (MAIN_SPREADSHEET_ID && String(MAIN_SPREADSHEET_ID).trim() !== "") {
-      try {
-        var mainSs = SpreadsheetApp.openById(String(MAIN_SPREADSHEET_ID).trim());
-        var mainSheet = mainSs.getSheetByName("Participants") || mainSs.getSheets()[0];
-        var mainLastRow = mainSheet.getLastRow();
-        var mainHeaders = mainSheet.getRange(1, 1, 1, Math.max(mainSheet.getLastColumn(), 13)).getValues()[0];
-        var mainPData = mainLastRow > 1 ? mainSheet.getRange(2, 1, mainLastRow - 1, mainHeaders.length).getValues() : [];
-        var mainRow = -1;
-
-        for (var mr = 0; mr < mainPData.length; mr++) {
-          var mToken = String(mainPData[mr][colId - 1] || "").trim().toLowerCase();
-          if (mToken === token.toLowerCase()) {
-            mainRow = mr + 2;
-            break;
-          }
-        }
-
-        if (mainRow > 0) {
-          mainSheet.getRange(mainRow, targetQrCol).setValue(true);
-          mainSheet.getRange(mainRow, targetQrCol).setBackground("#dcfce7");
-          mainSheet.getRange(mainRow, colCompletion).setValue(completedCount + " / 3");
-          mainSheet.getRange(mainRow, colRaffle).setValue(isRaffleQualified ? "QUALIFIED 🏆" : "PENDING");
-        } else {
-          // If not in main sheet, append
-          var newMainRow = new Array(mainHeaders.length);
-          for (var mc = 0; mc < mainHeaders.length; mc++) newMainRow[mc] = "";
-          newMainRow[colId - 1] = token;
-          newMainRow[colName - 1] = participantName;
-          newMainRow[colOffice - 1] = participantOffice;
-          newMainRow[colRegDate - 1] = timeString;
-          newMainRow[colBoothQR1 - 1] = false;
-          newMainRow[colBoothQR2 - 1] = false;
-          newMainRow[colBoothQR3 - 1] = false;
-          newMainRow[targetQrCol - 1] = true;
-          newMainRow[colSurvey - 1] = "NO";
-          newMainRow[colCompletion - 1] = completedCount + " / 3";
-          newMainRow[colRaffle - 1] = isRaffleQualified ? "QUALIFIED 🏆" : "PENDING";
-          mainSheet.appendRow(newMainRow);
-        }
-      } catch (repErr) {
-        Logger.log("Main Sheet replication error: " + repErr);
-      }
-    }
-
-    if (FORWARD_TO_MAIN_WEBAPP_URL && String(FORWARD_TO_MAIN_WEBAPP_URL).trim() !== "") {
-      try {
-        UrlFetchApp.fetch(String(FORWARD_TO_MAIN_WEBAPP_URL).trim(), {
-          method: "post",
-          contentType: "text/plain;charset=utf-8",
-          payload: JSON.stringify({
-            event: "BOOTH_SCAN_REPLICATE",
-            timestamp: timeString,
-            participantId: token,
-            name: participantName,
-            office: participantOffice,
-            boothId: vendorId,
-            boothName: vendorName,
-            updatedColumn: targetColHeader,
-            qrCompleted: true,
-            completion: completedCount + " / 3",
-            raffleQualified: isRaffleQualified
-          }),
-          muteHttpExceptions: true
-        });
-      } catch (fwdErr) {
-        Logger.log("Forward to main Web App error: " + fwdErr);
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // 10. Return JSON confirmation to BoothMaster
+    // 9. Return JSON confirmation to BoothMaster / Cloudflare Worker
     // ------------------------------------------------------------------------
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       ok: true,
+      action: "qr_checkin",
       duplicate: isDuplicate,
+      vendorToken: boothToken,
+      participantId: token,
       name: participantName,
       office: participantOffice,
-      participantId: token,
-      vendor: vendorId,
       updatedColumn: targetColHeader,
       columnNumber: targetQrCol,
       rowNumber: targetRow,
@@ -492,10 +422,229 @@ function handleRequest(e) {
   }
 }`;
 
+  // Complete Cloudflare Worker (worker.js) turnkey script
+  const sampleWorkerCode = `/**
+ * ============================================================================
+ * CSAM 2026 BOOTHMASTER QR SCANNER - CLOUDFLARE WORKER PROXY / MIDDLEWARE
+ * ============================================================================
+ * 
+ * Features:
+ *   1. Full CORS Preflight & Response Handling (OPTIONS 200, dynamic headers).
+ *   2. Content-Type: 'text/plain;charset=utf-8' forwarding to bypass Apps Script CORS.
+ *   3. CRITICAL: redirect: 'follow' in fetch() to transparently handle Google's 302 redirects.
+ *   4. Payload standardisation for Google Apps Script:
+ *      {
+ *        "action": "qr_checkin",
+ *        "vendorToken": boothToken,
+ *        "participantId": scannedQrData
+ *      }
+ */
+
+// Fallback Google Apps Script URL if environment variable is not configured
+const DEFAULT_GOOGLE_SCRIPT_URL =
+  "${HARDCODED_GOOGLE_SHEETS_URL}";
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept",
+  "Access-Control-Max-Age": "86400",
+};
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+      ...CORS_HEADERS,
+    },
+  });
+}
+
+function normalizeParticipantId(rawInput) {
+  if (!rawInput) return "";
+  let clean = String(rawInput).trim();
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    try {
+      const url = new URL(clean);
+      const paramId =
+        url.searchParams.get("p") ||
+        url.searchParams.get("participantId") ||
+        url.searchParams.get("id") ||
+        url.searchParams.get("token");
+      if (paramId) return paramId.trim();
+    } catch (e) {}
+  }
+  if (clean.startsWith("{") && clean.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(clean);
+      const jsonId = parsed.participantId || parsed.p || parsed.token || parsed.id;
+      if (jsonId) return String(jsonId).trim();
+    } catch (e) {}
+  }
+  return clean;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    // 1. CORS Preflight Handling
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 200,
+        headers: CORS_HEADERS,
+      });
+    }
+
+    const googleScriptUrl =
+      (env && env.GOOGLE_SCRIPT_URL) || DEFAULT_GOOGLE_SCRIPT_URL;
+
+    // 2. Diagnostic GET Route
+    if (request.method === "GET") {
+      return jsonResponse({
+        status: "ONLINE",
+        service: "CSAM 2026 Boothmaster QR Proxy Worker",
+        timestamp: new Date().toISOString(),
+        targetColumns: ["BoothQR1 (Col 6)", "BoothQR2 (Col 8)", "BoothQR3 (Col 10)"],
+      });
+    }
+
+    // 3. Process Scanner POST Request
+    if (request.method === "POST") {
+      let requestData = {};
+
+      try {
+        const contentType = request.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          requestData = await request.json();
+        } else {
+          requestData = JSON.parse(await request.text());
+        }
+      } catch (err) {
+        requestData = {};
+      }
+
+      // Connection test / ping
+      if (requestData.action === "validateVendorStation" || requestData.ping) {
+        try {
+          const pingRes = await fetch(googleScriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "validateVendorStation",
+              ping: "test-handshake",
+              timestamp: new Date().toISOString(),
+              client: "Cloudflare-Worker-Proxy",
+            }),
+            redirect: "follow", // CRITICAL for Apps Script 302 redirects
+          });
+          const text = await pingRes.text();
+          let json;
+          try { json = JSON.parse(text); } catch { json = { message: text }; }
+          return jsonResponse({
+            success: true,
+            status: "LIVE_CONNECTED",
+            message: "Cloudflare Worker proxy successfully reached Google Apps Script!",
+            backendResponse: json,
+          });
+        } catch (e) {
+          return jsonResponse({ success: false, error: e.message }, 502);
+        }
+      }
+
+      // 4. Extract required parameters
+      const vendorToken = (
+        requestData.vendorToken ||
+        requestData.boothToken ||
+        requestData.boothId ||
+        requestData.vendorId ||
+        "B1"
+      ).trim();
+
+      const rawId =
+        requestData.participantId ||
+        requestData.scannedQrData ||
+        requestData.participantToken ||
+        requestData.token ||
+        "";
+
+      const participantId = normalizeParticipantId(rawId);
+
+      if (!participantId) {
+        return jsonResponse(
+          { success: false, error: "Missing required parameter 'participantId' or 'scannedQrData'." },
+          400
+        );
+      }
+
+      // 5. Build standardized payload for Apps Script
+      const appsScriptPayload = {
+        action: "qr_checkin",
+        vendorToken: vendorToken,
+        participantId: participantId,
+      };
+
+      // 6. Forward to Google Apps Script with text/plain & redirect: 'follow'
+      try {
+        const gasResponse = await fetch(googleScriptUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8",
+          },
+          body: JSON.stringify(appsScriptPayload),
+          redirect: "follow", // <-- CRITICAL: Follow Google 302 redirects
+        });
+
+        const responseText = await gasResponse.text();
+        let responseJson;
+        try {
+          responseJson = JSON.parse(responseText);
+        } catch (e) {
+          return jsonResponse({
+            success: gasResponse.ok,
+            status: gasResponse.status,
+            rawResponse: responseText,
+          });
+        }
+
+        return jsonResponse(responseJson, gasResponse.status);
+      } catch (fetchError) {
+        return jsonResponse(
+          {
+            success: false,
+            error: "Error communicating with Google Apps Script: " + fetchError.message,
+          },
+          502
+        );
+      }
+    }
+
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  },
+};`;
+
+  const sampleWranglerCode = `name = "csam-boothmaster-proxy"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+[vars]
+GOOGLE_SCRIPT_URL = "${HARDCODED_GOOGLE_SHEETS_URL}"`;
+
   const copyScript = () => {
     navigator.clipboard.writeText(sampleAppsScriptCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const copyWorker = () => {
+    navigator.clipboard.writeText(sampleWorkerCode);
+    setCopiedWorkerCode(true);
+    setTimeout(() => setCopiedWorkerCode(false), 2000);
+  };
+
+  const copyWrangler = () => {
+    navigator.clipboard.writeText(sampleWranglerCode);
+    setCopiedWranglerCode(true);
+    setTimeout(() => setCopiedWranglerCode(false), 2000);
   };
 
   return (
@@ -565,6 +714,17 @@ function handleRequest(e) {
           >
             <Code className="w-3.5 h-3.5" />
             Google Apps Script Code
+          </button>
+          <button
+            onClick={() => setActiveTab('worker')}
+            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'worker'
+                ? 'border-orange-400 text-orange-300 font-bold'
+                : 'border-transparent text-[#8E9BB5] hover:text-white'
+            }`}
+          >
+            <Cloud className="w-3.5 h-3.5 text-orange-400" />
+            Cloudflare Worker (worker.js)
           </button>
           {config.pendingSyncCount !== undefined && config.pendingSyncCount > 0 && (
             <button
@@ -869,6 +1029,126 @@ function handleRequest(e) {
               <pre className="bg-[#080C17] p-3.5 rounded-xl border border-[#232D48] text-[10px] font-mono text-emerald-300 overflow-x-auto max-h-72 leading-relaxed selection:bg-cyan-500 selection:text-black">
                 {sampleAppsScriptCode}
               </pre>
+            </div>
+          )}
+
+          {activeTab === 'worker' && (
+            <div className="space-y-4">
+              {/* Architecture Banner */}
+              <div className="p-3.5 rounded-xl bg-orange-950/30 border border-orange-500/40 text-orange-200 space-y-2">
+                <div className="font-bold text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Cloud className="w-4 h-4 text-orange-400" />
+                    <span>Cloudflare Worker Proxy Architecture (CSAM 2026)</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 font-mono text-[10px] border border-orange-500/30">
+                    MIDDLEWARE PROXY
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#BACAE5]">
+                  This Cloudflare Worker handles CORS headers, accepts scanner check-ins, resolves attendee ID tokens, and forwards to Google Apps Script using <code className="text-orange-300 bg-black/40 px-1 py-0.5 rounded">redirect: "follow"</code> and <code className="text-orange-300 bg-black/40 px-1 py-0.5 rounded">Content-Type: text/plain;charset=utf-8</code> to bypass CORS and 302 redirect blocks.
+                </p>
+
+                {/* Pipeline visualizer */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[10px]">
+                  <div className="p-2 rounded-lg bg-[#0C101E] border border-orange-500/30">
+                    <div className="font-bold text-white flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> 1. Scanner Client
+                    </div>
+                    <div className="text-[#8E9BB5] mt-0.5 font-mono">
+                      HTTP POST (CORS)
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-[#0C101E] border border-orange-500/30">
+                    <div className="font-bold text-white flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span> 2. Cloudflare Worker
+                    </div>
+                    <div className="text-[#8E9BB5] mt-0.5 font-mono">
+                      OPTIONS 200 • 302 follow
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-[#0C101E] border border-orange-500/30">
+                    <div className="font-bold text-white flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 3. Google Apps Script
+                    </div>
+                    <div className="text-[#8E9BB5] mt-0.5 font-mono">
+                      BoothQR1, 2, 3 = true
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payload Contract Card */}
+              <div className="p-3 rounded-xl bg-[#090D1A] border border-[#232D48] space-y-1.5">
+                <div className="font-bold text-white flex items-center justify-between text-[11px]">
+                  <span className="flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                    Exact Payload Contract Sent to Apps Script:
+                  </span>
+                  <span className="text-emerald-400 font-mono text-[10px]">POST Body (JSON)</span>
+                </div>
+                <pre className="bg-[#050811] p-2.5 rounded-lg border border-[#1E273E] text-[10px] font-mono text-cyan-300">
+{`{
+  "action": "qr_checkin",
+  "vendorToken": "B1",       // "B1", "B2", or "B3" (Station Secret Token)
+  "participantId": "CSAM-001" // Scanned registration ID (or cleaned URL)
+}`}
+                </pre>
+              </div>
+
+              {/* Worker.js Code Block */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[#8E9BB5]">
+                  <span className="font-semibold text-white flex items-center gap-1.5">
+                    <Cloud className="w-3.5 h-3.5 text-orange-400" />
+                    Cloudflare Worker Script (worker.js):
+                  </span>
+                  <button
+                    onClick={copyWorker}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white transition-colors cursor-pointer font-bold text-xs shadow-md"
+                  >
+                    {copiedWorkerCode ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedWorkerCode ? 'Copied worker.js!' : 'Copy worker.js'}
+                  </button>
+                </div>
+                <pre className="bg-[#080C17] p-3 rounded-xl border border-[#232D48] text-[10px] font-mono text-orange-300 overflow-x-auto max-h-64 leading-relaxed selection:bg-orange-500 selection:text-black">
+                  {sampleWorkerCode}
+                </pre>
+              </div>
+
+              {/* Wrangler.toml Code Block & Instructions */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[#8E9BB5]">
+                  <span className="font-semibold text-white flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                    wrangler.toml (Optional CLI Deployment):
+                  </span>
+                  <button
+                    onClick={copyWrangler}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1F293D] hover:bg-[#2B3852] text-white transition-colors cursor-pointer text-xs"
+                  >
+                    {copiedWranglerCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedWranglerCode ? 'Copied wrangler.toml!' : 'Copy wrangler.toml'}
+                  </button>
+                </div>
+                <pre className="bg-[#080C17] p-2.5 rounded-xl border border-[#232D48] text-[10px] font-mono text-cyan-300 overflow-x-auto leading-relaxed">
+                  {sampleWranglerCode}
+                </pre>
+              </div>
+
+              {/* Deployment Steps */}
+              <div className="p-3 rounded-xl bg-[#080C17] border border-[#232D48] text-[11px] text-[#A2B2D2] space-y-1">
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  Quick Deployment Guide:
+                </div>
+                <ol className="list-decimal list-inside space-y-0.5 text-[10px]">
+                  <li>In Cloudflare Dashboard, go to <strong>Workers & Pages → Create Application → Create Worker</strong>.</li>
+                  <li>Click <strong>Quick Edit</strong>, paste the <code className="text-white">worker.js</code> script above, and click <strong>Save and Deploy</strong>.</li>
+                  <li>In <strong>Settings → Variables</strong>, add environment variable <code className="text-white">GOOGLE_SCRIPT_URL</code> pointing to your Google Apps Script Web App URL.</li>
+                  <li>Copy your worker's <code className="text-orange-300">*.workers.dev</code> URL and paste it into the <strong>Connection Settings</strong> tab!</li>
+                </ol>
+              </div>
             </div>
           )}
 

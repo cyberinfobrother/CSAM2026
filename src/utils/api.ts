@@ -368,7 +368,10 @@ export async function recordScanWithBackend(
     const qrColumnName = `BoothQR${boothNumber}`; // e.g. "BoothQR1", "BoothQR2", "BoothQR3"
 
     const livePayload = {
-      action: 'recordBoothCheckin',
+      action: 'qr_checkin',
+      vendorToken: boothCode,
+      participantId: partId,
+      scannedQrData: partId,
       event: 'CSAM_BOOTH_SCAN',
       timestamp: new Date().toISOString(),
       booth: boothCode,
@@ -384,7 +387,6 @@ export async function recordScanWithBackend(
       qrCompleted: true, // Marshals completed scan logs true
       qrValue: true,
       participantToken: participant.token,
-      participantId: partId,
       participantIdInput: partId,
       isDuplicate,
       currentParticipant: {

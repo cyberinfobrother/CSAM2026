@@ -1,0 +1,6 @@
+name = "csam-boothmaster-proxy"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+[vars]
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAeLqizAvH2HGjbQF0eG7rPaf0RTNE41NfC6Xob5fRJINICFsNvIETXNZj08l9DK3A/exec"
