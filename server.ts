@@ -747,6 +747,12 @@ app.get('/worker.js', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'worker.js'));
 });
 
+// Explicitly serve public assets (like csam_theme_bg.jpg, manifest.json, Vendor.html)
+app.use(express.static(path.join(process.cwd(), 'public'), {
+  maxAge: '1d',
+  immutable: true,
+}));
+
 // ----------------- VITE MIDDLEWARE SETUP ----------------- //
 
 async function startServer() {

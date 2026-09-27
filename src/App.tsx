@@ -176,7 +176,9 @@ export default function App() {
         const updatedCol = res.externalBackend?.updatedColumn || (res as any).updatedColumn || currentVendor.id;
         const syncMsg = res.externalBackend?.synced
           ? `Logged to ${res.externalBackend.sheetName || 'Google Sheet'} column [${updatedCol}]`
-          : undefined;
+          : res.externalBackend?.error
+          ? `Sync pending: ${res.externalBackend.error}`
+          : 'Saved locally — pending Google Sheet sync';
 
         if (isDuplicate) {
           soundFx.playDuplicate();
