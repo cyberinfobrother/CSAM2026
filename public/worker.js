@@ -5,7 +5,8 @@
  * 
  * Features:
  *   1. Full Original GUI serving: If accessed via web browser, serves the 
- *      100% Mobile-Compatible CyberSecurity Awareness Month 2026 Original UI.
+ *      100% Mobile-Compatible CyberSecurity Awareness Month 2026 Original UI
+ *      (matches Google AI Studio Image 1 exactly).
  *   2. High-Performance API & Proxy: If accessed via POST or with ?format=json,
  *      handles CORS, normalizes tokens, and relays to Google Apps Script
  *      with redirect: 'follow' and text/plain.
@@ -172,7 +173,7 @@ export default {
         requestData.boothId ||
         requestData.vendorId ||
         requestData.booth ||
-        "B1"
+        "B2"
       ).trim();
 
       const rawParticipantId =
@@ -235,7 +236,7 @@ export default {
 };
 
 /**
- * Renders the 100% Mobile-Compatible Original UI identical to Google AI Studio
+ * Renders the 100% Mobile-Compatible Original UI identical to Google AI Studio Image 1
  */
 function renderOriginalBoothMasterHtml(googleScriptUrl) {
   return `<!DOCTYPE html>
@@ -286,7 +287,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
 </head>
 <body
   class="min-h-[100dvh] relative text-white flex flex-col items-center justify-start p-3 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(0.75rem+env(safe-area-inset-top,0px))] selection:bg-cyan-500 selection:text-black overflow-x-hidden font-sans"
-  style="background-image: radial-gradient(ellipse at 85% 15%, rgba(255, 140, 50, 0.15) 0%, transparent 45%), radial-gradient(ellipse at 15% 85%, rgba(0, 229, 255, 0.12) 0%, transparent 50%); background-color: #070C1A;"
+  style="background-image: radial-gradient(ellipse at 85% 15%, rgba(255, 140, 50, 0.15) 0%, transparent 45%), radial-gradient(ellipse at 15% 85%, rgba(0, 229, 255, 0.12) 0%, transparent 50%), url('https://ais-pre-qa4a4yyutoy7aazehq43ea-607520250010.asia-southeast1.run.app/csam_theme_bg.jpg'), url('/csam_theme_bg.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-color: #070C1A;"
 >
   <div class="fixed inset-0 bg-[#070B18]/60 backdrop-brightness-95 pointer-events-none"></div>
 
@@ -295,7 +296,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
       <div class="absolute -top-24 -right-24 w-64 h-64 bg-[#FF8C38]/15 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-[#00E5FF]/15 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- Top Nav -->
+      <!-- Top Nav matching Image 1 -->
       <div class="w-full mb-5 text-center">
         <div class="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/10">
           <div class="flex items-center gap-2.5 text-left">
@@ -313,51 +314,75 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
 
           <div class="flex items-center gap-1.5">
             <div class="px-2.5 py-1.5 min-h-[38px] rounded-xl border text-xs font-semibold flex items-center gap-1.5 backdrop-blur-md bg-emerald-950/70 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
-              <span>⚡ Worker Live</span>
+              <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16m-5 4v6m-4-6v6m-4-6v6" />
+              </svg>
+              <span>Sheets Live</span>
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </div>
-            <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 min-h-[38px] min-w-[38px] rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 backdrop-blur-md bg-white/10 text-emerald-400 border-white/20">
+            <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 min-h-[38px] min-w-[38px] rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 backdrop-blur-md bg-white/10 text-emerald-400 border-white/20 hover:bg-white/15 cursor-pointer">
               <span id="soundIcon">🔊</span>
             </button>
-            <button onclick="openHistoryModal()" class="px-2.5 py-1.5 min-h-[38px] rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5">
+            <button onclick="openHistoryModal()" class="px-2.5 py-1.5 min-h-[38px] rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               <span>Scans</span>
-              <span id="headerScanCountBadge" class="bg-cyan-500 text-black text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+              <span id="headerScanCountBadge" class="hidden bg-cyan-500 text-black text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
             </button>
           </div>
         </div>
 
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">CyberSecurity Awareness Month 2026</h1>
-        <div class="text-xs sm:text-sm text-cyan-300/90 font-semibold mt-1 tracking-wide uppercase">CyberMaster Challenge Scanner</div>
+        <div class="text-xs sm:text-sm text-cyan-300/90 font-semibold mt-1 tracking-wide uppercase">CYBERMASTER CHALLENGE SCANNER</div>
 
-        <!-- Booth selector -->
+        <!-- Booth selector with exact name from Image 1: Booth2 - TVM -->
         <div class="relative inline-block mt-3 text-center">
           <button id="stationDropdownBtn" onclick="toggleStationDropdown()" class="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-black/45 hover:bg-black/60 border border-white/15 text-white text-base sm:text-lg font-bold tracking-wide">
-            <span id="selectedStationName" class="text-cyan-400 font-extrabold">VENDOR 1 — BOOTH 1</span>
-            <span class="text-xs text-[#9BB0D3]">▼</span>
+            <span id="selectedStationName" class="text-cyan-400 font-extrabold">Booth2 - TVM</span>
+            <svg class="w-4 h-4 text-[#9BB0D3] group-hover:text-white transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           <div id="stationDropdownMenu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden">
             <div class="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10">Switch Booth Station</div>
-            <button onclick="selectStation('B1', 'VENDOR 1 — BOOTH 1')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 border-l-2 border-cyan-400 bg-cyan-500/15">
-              <span class="text-white font-semibold">VENDOR 1 — BOOTH 1</span>
+            <button onclick="selectStation('Booth 1', 'B1', 'Booth 1 - Netsec')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3]">
+              <div>
+                <div class="text-white font-semibold">Booth 1 - Netsec</div>
+                <div class="text-[11px] text-[#9BB0D3]">Network Security & Firewall — BoothQR1 (Col 6)</div>
+              </div>
               <span class="text-amber-300 font-bold">B1</span>
             </button>
-            <button onclick="selectStation('B2', 'VENDOR 2 — BOOTH 2')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3]">
-              <span class="text-white font-semibold">VENDOR 2 — BOOTH 2</span>
+            <button onclick="selectStation('Booth 2', 'B2', 'Booth2 - TVM')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 border-l-2 border-cyan-400 bg-cyan-500/15">
+              <div>
+                <div class="text-white font-semibold">Booth2 - TVM</div>
+                <div class="text-[11px] text-[#9BB0D3]">Threat & Vulnerability Management — BoothQR2 (Col 8)</div>
+              </div>
               <span class="text-cyan-300 font-bold">B2</span>
             </button>
-            <button onclick="selectStation('B3', 'VENDOR 3 — BOOTH 3')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3]">
-              <span class="text-white font-semibold">VENDOR 3 — BOOTH 3</span>
+            <button onclick="selectStation('Booth 3', 'B3', 'Booth3 - SecOps')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3]">
+              <div>
+                <div class="text-white font-semibold">Booth3 - SecOps</div>
+                <div class="text-[11px] text-[#9BB0D3]">Security Operations & Incident Response — BoothQR3 (Col 10)</div>
+              </div>
               <span class="text-purple-300 font-bold">B3</span>
             </button>
           </div>
         </div>
+
+        <!-- Station Online & Ready Subtitle from Image 1 -->
+        <div class="mt-1 text-[11px] text-cyan-400 font-medium flex items-center justify-center gap-1.5">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          Station Online & Ready
+        </div>
       </div>
 
-      <!-- Viewfinder -->
-      <div id="scannerContainer" class="relative min-h-[280px] md:min-h-[310px] rounded-2xl backdrop-blur-xl border-2 border-cyan-400/60 bg-[#050A17]/65 shadow-[0_0_30px_rgba(6,182,212,0.2)] flex flex-col items-center justify-center overflow-hidden">
-        <div id="reader" class="w-full h-full min-h-[280px] rounded-2xl overflow-hidden"></div>
-        <div id="viewfinderOverlay" class="absolute inset-0 pointer-events-none flex items-center justify-center">
+      <!-- Viewfinder matching Image 1: Starts in Idle state by default! -->
+      <div id="scannerContainer" class="relative min-h-[280px] md:min-h-[310px] rounded-2xl backdrop-blur-xl border-2 border-white/15 hover:border-cyan-400/40 bg-[#050A17]/60 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.12)] flex flex-col items-center justify-center overflow-hidden transition-all duration-300">
+        <div id="reader" class="hidden w-full h-full min-h-[280px] rounded-2xl overflow-hidden"></div>
+
+        <div id="viewfinderOverlay" class="hidden absolute inset-0 pointer-events-none flex items-center justify-center">
           <div id="reticleBox" class="relative w-56 h-56 border-2 border-cyan-400/60 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.25)]">
             <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-cyan-400 rounded-tl shadow-[0_0_10px_#00E5FF]"></div>
             <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-cyan-400 rounded-tr shadow-[0_0_10px_#00E5FF]"></div>
@@ -370,19 +395,75 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
             <span>Camera live — Ready for attendee badges</span>
           </div>
         </div>
+
+        <!-- Camera Inactive Box from Image 1 -->
+        <div id="idleOverlay" class="p-6 text-center flex flex-col items-center justify-center gap-3">
+          <div class="w-16 h-16 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/15 flex items-center justify-center text-cyan-400 shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
+            <svg class="w-8 h-8 text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white tracking-wide">Camera Inactive</h3>
+            <p class="text-xs text-[#9BB0D3] mt-1 max-w-xs leading-relaxed">
+              Tap below to launch continuous live scanning for attendee badges.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <!-- Controls -->
+      <!-- The Two Main Buttons matching Image 1 exactly -->
       <div class="flex flex-col gap-2 mt-3">
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="restartCameraStream()" class="py-2.5 px-3 min-h-[44px] rounded-xl font-bold text-xs text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/20 active:scale-95 flex items-center justify-center gap-1.5">
-            🔄 Restart Camera
+        <div id="idleActionBtns" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button
+            id="liveScanBtn"
+            onclick="startContinuousScanner()"
+            class="py-3.5 px-4 min-h-[44px] rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#00D2FF] to-[#0066FF] hover:from-[#26D9FF] hover:to-[#1A75FF] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/40 border border-cyan-300/30 cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Start Live Camera
           </button>
-          <button onclick="flipCamera()" class="py-2.5 px-3 min-h-[44px] rounded-xl font-bold text-xs text-cyan-300 backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/20 active:scale-95 flex items-center justify-center gap-1.5">
-            📷 Flip Camera
+          <button
+            id="photoBtn"
+            onclick="document.getElementById('qrPhotoInput').click()"
+            class="py-3.5 px-4 min-h-[44px] rounded-xl font-bold text-sm text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/15 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+          >
+            <svg class="w-4 h-4 text-[#9BB0D3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Take / Upload QR Photo
           </button>
         </div>
-        <select id="cameraSelect" onchange="onSelectCamera(this.value)" class="w-full text-xs bg-black/60 text-white border border-white/15 rounded-lg px-2 py-2 min-h-[40px]"></select>
+
+        <div id="activeActionControls" class="hidden flex flex-col gap-2">
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="restartCameraStream()" class="py-2.5 px-3 min-h-[44px] rounded-xl font-bold text-xs text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/20 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+              🔄 Restart Camera
+            </button>
+            <button onclick="pauseCameraStream()" class="py-2.5 px-3 min-h-[44px] rounded-xl font-bold text-xs text-rose-200 backdrop-blur-xl bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+              ⏹️ Pause Camera
+            </button>
+          </div>
+          <div class="flex items-center justify-between gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10">
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+              <button onclick="flipCamera()" type="button" class="p-1.5 min-h-[36px] rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-cyan-300 border border-white/15 transition-all shrink-0 cursor-pointer flex items-center gap-1">
+                🔄 <span class="text-[10px] font-bold">Flip</span>
+              </button>
+              <select id="cameraSelect" onchange="onSelectCamera(this.value)" class="w-full text-xs bg-black/60 text-white border border-white/15 rounded-lg px-2 py-1.5 focus:outline-none focus:border-cyan-400 truncate min-h-[36px]">
+                <option value="">Rear Camera (Default)</option>
+              </select>
+            </div>
+            <button id="torchBtn" onclick="toggleTorch()" class="hidden px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold backdrop-blur-md bg-white/10 text-white hover:bg-white/20 border border-white/15 shrink-0">
+              🔦 Flash
+            </button>
+          </div>
+        </div>
+
+        <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoUpload(this.files)" />
       </div>
 
       <!-- Result Card -->
@@ -405,10 +486,15 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
         </div>
       </div>
 
-      <!-- Manual Input -->
+      <!-- Manual Attendee Check-In Form matching Image 1 -->
       <div class="mt-5 pt-4 border-t border-white/10">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider">Manual Attendee Check-In (Backup)</span>
+          <span class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            MANUAL ATTENDEE CHECK-IN (BACKUP)
+          </span>
           <span class="text-[10px] text-[#8E9BB5]">Type Token or ID</span>
         </div>
         <form onsubmit="handleManualSubmit(event)" class="flex gap-2">
@@ -428,23 +514,33 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
         </form>
       </div>
 
-      <!-- Stats -->
+      <!-- Stats Bar matching Image 1 -->
       <div class="mt-4 p-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-around text-center text-xs">
         <div>
           <div id="statTotalScans" class="text-base font-extrabold text-white">0</div>
-          <div class="text-[10px] text-[#9BB0D3] uppercase font-semibold">Total Scans</div>
+          <div class="text-[10px] text-[#9BB0D3] uppercase font-semibold">TOTAL SCANS</div>
         </div>
         <div class="w-px h-6 bg-white/10"></div>
         <div>
           <div id="statUniqueAttendees" class="text-base font-extrabold text-cyan-400">0</div>
-          <div class="text-[10px] text-[#9BB0D3] uppercase font-semibold">Unique Attendees</div>
+          <div class="text-[10px] text-[#9BB0D3] uppercase font-semibold">UNIQUE ATTENDEES</div>
         </div>
         <div class="w-px h-6 bg-white/10"></div>
         <div>
           <div class="text-base font-extrabold text-emerald-400">3 of 3</div>
-          <div class="text-[10px] text-[#9BB0D3] uppercase font-semibold">Raffle Target</div>
+          <div class="text-[10px] text-[#9BB0D3] uppercase font-semibold">RAFFLE TARGET</div>
         </div>
       </div>
+    </div>
+
+    <!-- Footer matching Image 1 -->
+    <div class="mt-4 text-center text-xs text-[#8A9CBE] space-y-1">
+      <p>
+        Connected to Vendor Station: <strong id="footerStationName" class="text-white">Booth2 - TVM</strong> (<span id="footerStationToken">B2</span>)
+      </p>
+      <p class="text-[11px] text-[#7284A5]">
+        CSAM 2026 QR Verification Portal • Compatible with mobile web passports and physical badges.
+      </p>
     </div>
   </div>
 
@@ -467,7 +563,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
   </div>
 
   <script>
-    let currentStation = { id: 'B1', name: 'VENDOR 1 — BOOTH 1', token: 'B1' };
+    let currentStation = { id: 'Booth 2', name: 'Booth2 - TVM', token: 'B2' };
     let scans = JSON.parse(localStorage.getItem('csam_vendor_scans_prod') || '[]');
     let html5QrScanner = null;
     let soundEnabled = true;
@@ -517,6 +613,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
           [440, 440].forEach((f, i) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
+            osc.type = 'sine';
             osc.frequency.setValueAtTime(f, now + i * 0.15);
             gain.gain.setValueAtTime(0.0001, now + i * 0.15);
             gain.gain.exponentialRampToValueAtTime(0.18, now + i * 0.15 + 0.02);
@@ -551,10 +648,12 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
       document.getElementById('stationDropdownMenu').classList.toggle('hidden');
     }
 
-    function selectStation(token, name) {
+    function selectStation(id, token, name) {
       triggerHaptic('tap');
-      currentStation = { id: token, token: token, name: name };
+      currentStation = { id: id, token: token, name: name };
       document.getElementById('selectedStationName').textContent = name;
+      document.getElementById('footerStationName').textContent = name;
+      document.getElementById('footerStationToken').textContent = token;
       document.getElementById('stationDropdownMenu').classList.add('hidden');
       updateStats();
     }
@@ -564,10 +663,16 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
       const unique = new Set(stationScans.map(s => s.participantToken)).size;
       document.getElementById('statTotalScans').textContent = stationScans.length;
       document.getElementById('statUniqueAttendees').textContent = unique;
-      document.getElementById('headerScanCountBadge').textContent = stationScans.length;
+      const badge = document.getElementById('headerScanCountBadge');
+      badge.textContent = stationScans.length;
+      if (stationScans.length > 0) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
     }
 
-    async function initCamera() {
+    async function loadCameras() {
       try {
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
@@ -585,10 +690,16 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
           });
         }
       } catch (e) {}
-      startContinuousScanner();
     }
 
     async function startContinuousScanner() {
+      triggerHaptic('tap');
+      document.getElementById('idleOverlay').classList.add('hidden');
+      document.getElementById('reader').classList.remove('hidden');
+      document.getElementById('viewfinderOverlay').classList.remove('hidden');
+      document.getElementById('idleActionBtns').classList.add('hidden');
+      document.getElementById('activeActionControls').classList.remove('hidden');
+
       if (html5QrScanner) {
         try {
           if (html5QrScanner.isScanning) await html5QrScanner.stop();
@@ -634,11 +745,23 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
       }
     }
 
+    async function pauseCameraStream() {
+      triggerHaptic('tap');
+      if (html5QrScanner) {
+        try {
+          if (html5QrScanner.isScanning) await html5QrScanner.stop();
+        } catch (e) {}
+      }
+      document.getElementById('reader').classList.add('hidden');
+      document.getElementById('viewfinderOverlay').classList.add('hidden');
+      document.getElementById('idleOverlay').classList.remove('hidden');
+      document.getElementById('activeActionControls').classList.add('hidden');
+      document.getElementById('idleActionBtns').classList.remove('hidden');
+    }
+
     async function restartCameraStream() {
       triggerHaptic('tap');
-      if (html5QrScanner && html5QrScanner.isScanning) {
-        try { await html5QrScanner.stop(); } catch (e) {}
-      }
+      await pauseCameraStream();
       setTimeout(startContinuousScanner, 200);
     }
 
@@ -655,6 +778,21 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
     async function onSelectCamera(newId) {
       selectedCameraId = newId;
       await restartCameraStream();
+    }
+
+    async function handlePhotoUpload(files) {
+      if (!files || !files[0]) return;
+      const file = files[0];
+      if (html5QrScanner && html5QrScanner.isScanning) {
+        try { await html5QrScanner.stop(); } catch (e) {}
+      }
+      const scanner = new Html5Qrcode('reader');
+      try {
+        const decodedText = await scanner.scanFile(file, true);
+        processBadgeScan(decodedText);
+      } catch (e) {
+        alert('Could not detect a clear QR code from this photo. Please try again.');
+      }
     }
 
     async function processBadgeScan(rawText) {
@@ -713,7 +851,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
         card.className = 'mt-4 p-5 rounded-2xl text-center text-white shadow-2xl transition-all animate-scale-up backdrop-blur-2xl bg-[#2b1f09]/85 border-2 border-amber-400/50 shadow-[0_16px_48px_rgba(245,158,11,0.35)]';
         document.getElementById('resultTitle').className = 'text-xl font-extrabold uppercase my-1 text-amber-300';
         document.getElementById('resultTitle').textContent = '⛔ DUPLICATE SCAN REJECTED';
-        document.getElementById('resultMessage').textContent = backendRes.message || ('Attendee already checked in at ' + currentStation.name);
+        document.getElementById('resultMessage').textContent = backendRes.message || ('Attendee already stamped at ' + currentStation.name);
       } else {
         triggerHaptic('success');
         card.className = 'mt-4 p-5 rounded-2xl text-center text-white shadow-2xl transition-all animate-scale-up backdrop-blur-2xl bg-[#082417]/85 border-2 border-emerald-400/50 shadow-[0_16px_48px_rgba(16,185,129,0.35)]';
@@ -788,7 +926,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
 
     window.addEventListener('DOMContentLoaded', () => {
       updateStats();
-      initCamera();
+      loadCameras();
     });
   </script>
 </body>
