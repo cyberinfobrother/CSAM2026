@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Volume2, VolumeX, QrCode, History, ChevronDown, Check, Sparkles, Database } from 'lucide-react';
 import { VendorStation } from '../types';
+import { triggerHaptic } from '../utils/audio';
 
 interface StationHeaderProps {
   currentVendor: VendorStation;
@@ -65,17 +66,20 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
         <div className="flex items-center gap-1.5">
           {/* Live Database Connection Launcher */}
           <button
-            onClick={onOpenBackend}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer backdrop-blur-md ${
+            onClick={() => {
+              triggerHaptic('tap');
+              onOpenBackend();
+            }}
+            className={`px-2.5 py-1.5 min-h-[38px] rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-md active:scale-95 ${
               hasExternalBackend
                 ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/50 hover:bg-emerald-900/70 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
                 : 'bg-white/5 text-[#9BB0D3] hover:text-white border-white/15 hover:bg-white/10'
             }`}
             title="Configure Live Database connection and instant sync"
           >
-            <Database className="w-3.5 h-3.5 text-emerald-400" />
+            <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span className="hidden sm:inline">{getDbLabel()}</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             {pendingSyncCount !== undefined && pendingSyncCount > 0 && (
               <span className="bg-amber-500 text-black text-[9px] font-bold px-1 rounded-full">
                 {pendingSyncCount}
@@ -85,8 +89,11 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
 
           {/* Sound Toggle */}
           <button
-            onClick={onToggleSound}
-            className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors backdrop-blur-md ${
+            onClick={() => {
+              triggerHaptic('tap');
+              onToggleSound();
+            }}
+            className={`p-2 min-h-[38px] min-w-[38px] rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 transition-all backdrop-blur-md active:scale-95 ${
               soundEnabled
                 ? 'bg-white/10 text-emerald-400 border-white/20 hover:bg-white/15'
                 : 'bg-white/5 text-[#9BB0D3] border-white/15 hover:bg-white/10'
@@ -99,8 +106,11 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
           {/* Test Badges Modal Launcher (optional) */}
           {onOpenTestBadges && (
             <button
-              onClick={onOpenTestBadges}
-              className="px-2.5 py-1.5 rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              onClick={() => {
+                triggerHaptic('tap');
+                onOpenTestBadges();
+              }}
+              className="px-2.5 py-1.5 min-h-[38px] rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
               title="Generate test attendee QR badges"
             >
               <QrCode className="w-3.5 h-3.5 text-cyan-400" />
@@ -110,8 +120,11 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
 
           {/* History Modal Launcher */}
           <button
-            onClick={onOpenHistory}
-            className="px-2.5 py-1.5 rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={() => {
+              triggerHaptic('tap');
+              onOpenHistory();
+            }}
+            className="px-2.5 py-1.5 min-h-[38px] rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
             title="View scan history"
           >
             <History className="w-3.5 h-3.5 text-amber-400" />
@@ -166,10 +179,11 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
                     <button
                       key={v.id}
                       onClick={() => {
+                        triggerHaptic('tap');
                         onSelectVendor(v);
                         setDropdownOpen(false);
                       }}
-                      className={`w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors ${
+                      className={`w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors active:bg-cyan-500/20 ${
                         isSelected
                           ? 'bg-cyan-500/15 text-white font-bold border-l-2 border-cyan-400'
                           : 'text-[#9BB0D3] hover:bg-white/5 hover:text-white'

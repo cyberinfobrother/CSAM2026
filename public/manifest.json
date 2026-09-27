@@ -1,0 +1,17 @@
+{
+  "name": "BoothMaster QR Portal",
+  "short_name": "BoothMaster",
+  "description": "A high-performance vendor portal scanner for reading participant QR codes, recording event challenge check-ins, and tracking raffle qualifications.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070C1A",
+  "theme_color": "#070C1A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/csam_theme_bg.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

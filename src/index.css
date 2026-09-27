@@ -77,3 +77,61 @@
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
+
+/* 100% Mobile Compatibility Rules */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Safe Area Insets for iOS Notch and Home Bar */
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+/* Ensure Camera Viewport fills cleanly on mobile without distortion */
+#reader {
+  width: 100% !important;
+  border: none !important;
+  background: #050a17 !important;
+}
+
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 52vh !important;
+  object-fit: cover !important;
+  border-radius: 1rem !important;
+  transform: scale(1.02); /* eliminates edge gaps */
+}
+
+#reader img {
+  display: none !important;
+}
+
+/* Prevent unwanted callout menus or selections on interactive elements */
+button, input, select {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent mobile iOS zoom on input focus by guaranteeing 16px base font size */
+@media screen and (max-width: 640px) {
+  input[type="text"],
+  input[type="url"],
+  input[type="password"],
+  select {
+    font-size: 16px !important;
+  }
+}
+

@@ -1,808 +1,838 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="referrer" content="no-referrer">
-  <title>BoothMaster QR Portal — Vendor Station Scanner</title>
-  <!-- HTML5 QR Code Scanner Library CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070C1A" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BoothMaster" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>BoothMaster QR Portal — CSAM 2026</title>
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTML5 QR Code Scanner Library -->
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <!-- Canvas Confetti for Celebration CDN -->
+  <!-- Canvas Confetti Celebration Library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
   <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #070c1a;
-      background-image: radial-gradient(ellipse at 85% 15%, rgba(255, 140, 50, 0.15) 0%, transparent 45%), radial-gradient(ellipse at 15% 85%, rgba(0, 229, 255, 0.12) 0%, transparent 50%), url('/csam_theme_bg.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      color: #ffffff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px;
+    @keyframes scanLine {
+      0% { top: 6%; opacity: 0.8; }
+      50% { top: 90%; opacity: 1; }
+      100% { top: 6%; opacity: 0.8; }
     }
-    .wrap {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
+    .animate-scan-line {
+      animation: scanLine 2.4s ease-in-out infinite;
     }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding: 4px 2px;
+    @keyframes scaleUp {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .animate-scale-up {
+      animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    .logo-badge {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #00d2ff, #0066ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 4px 16px rgba(0, 210, 255, 0.3);
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
     }
-    h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
+    button, input, select {
+      touch-action: manipulation;
     }
-    .sub {
-      color: #00e5ff;
-      font-size: 13px;
-      margin-top: 2px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    .controls-top {
-      display: flex;
-      gap: 8px;
-    }
-    .icon-btn {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-    }
-    .icon-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.25);
-    }
-    .card {
-      background: rgba(9, 17, 38, 0.75);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 24px;
-      padding: 24px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.12);
-      margin-bottom: 16px;
-    }
-    .station-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 10px 14px;
-      margin-bottom: 16px;
-    }
-    .station-title {
-      font-weight: 800;
-      font-size: 15px;
-      color: #00e5ff;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .station-counter {
-      font-size: 13px;
-      color: #aeb8d0;
-    }
-    .station-counter strong {
-      color: #fff;
-      font-size: 15px;
-    }
-    /* Viewfinder Container - Glassmorphic */
     #reader {
       width: 100% !important;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 2px solid rgba(0, 229, 255, 0.3) !important;
-      background: rgba(5, 10, 23, 0.65) !important;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      min-height: 280px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 25px rgba(0, 229, 255, 0.05);
+      border: none !important;
+      background: #050A17 !important;
     }
     #reader video {
-      border-radius: 14px;
-      object-fit: cover;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 52vh !important;
+      object-fit: cover !important;
+      border-radius: 1rem !important;
+      transform: scale(1.02);
     }
-    #reader__dashboard_section_csr button {
-      background: linear-gradient(135deg, #00d2ff, #0066ff) !important;
-      color: #fff !important;
-      border: 1px solid rgba(255,255,255,0.2) !important;
-      padding: 8px 16px !important;
-      border-radius: 8px !important;
-      font-weight: bold !important;
-      cursor: pointer !important;
-      margin: 6px !important;
-      box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3) !important;
+    #reader img {
+      display: none !important;
     }
-    #reader__status_span {
-      color: #00e5ff !important;
-      font-size: 12px !important;
-      font-weight: 600;
-    }
-    /* Scanner Toolbar */
-    .scanner-tools {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .btn {
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: 0;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-    }
-    .btn-primary { 
-      background: linear-gradient(135deg, #00d2ff, #0066ff); 
-      color: #fff; 
-      box-shadow: 0 4px 14px rgba(0, 102, 255, 0.4);
-    }
-    .btn-primary:hover { 
-      background: linear-gradient(135deg, #26d9ff, #1a75ff); 
-    }
-    .btn-secondary { 
-      background: rgba(255, 255, 255, 0.1); 
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.18); 
-      color: #fff; 
-    }
-    .btn-secondary:hover { 
-      background: rgba(255, 255, 255, 0.16); 
-    }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    /* Result Cards */
-    .outcome-box {
-      border-radius: 16px;
-      padding: 18px;
-      margin-top: 16px;
-      animation: popIn 0.25s ease-out;
-      display: none;
-    }
-    @keyframes popIn {
-      from { transform: scale(0.96); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    .outcome-success {
-      background: #11281e;
-      border: 1px solid #1f5e3f;
-      color: #a8f2c3;
-    }
-    .outcome-duplicate {
-      background: #2d2410;
-      border: 1px solid #6b511d;
-      color: #ffd889;
-    }
-    .outcome-error {
-      background: #3a161f;
-      border: 1px solid #732637;
-      color: #ffb8c2;
-    }
-    .outcome-title {
-      font-size: 17px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-    .outcome-name {
-      font-size: 20px;
-      font-weight: 800;
-      color: #ffffff;
-      margin: 4px 0 2px 0;
-    }
-    .outcome-office {
-      font-size: 14px;
-      color: #cbd5e1;
-      margin-bottom: 12px;
-    }
-    .stats-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(255,255,255,0.12);
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-    }
-    .pill-qualified {
-      background: #173d2a;
-      color: #a8f2c3;
-      border: 1px solid #2b7a50;
-    }
-    .pill-pending {
-      background: #202b44;
-      color: #9cb2db;
-      border: 1px solid #33446b;
-    }
-
-    /* Manual Input Section */
-    .manual-box {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid #232d47;
-      display: none;
-    }
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    input {
-      flex: 1;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid #394563;
-      background: #0e1527;
-      color: #fff;
-      font-size: 14px;
-    }
-    input:focus {
-      outline: none;
-      border-color: #4f7cff;
-    }
-
-    /* History Table */
-    .table-wrap {
-      overflow-x: auto;
-      margin-top: 10px;
-      border-radius: 12px;
-      border: 1px solid #232d47;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      text-align: left;
-    }
-    th {
-      background: #10172a;
-      color: #aeb8d0;
-      padding: 10px 12px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    td {
-      padding: 10px 12px;
-      border-top: 1px solid #1e2945;
-      color: #e2e8f0;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 24px;
-      color: #aeb8d0;
-      font-size: 13px;
-    }
-    .error-screen {
-      text-align: center;
-      padding: 40px 20px;
-    }
-    .error-icon {
-      font-size: 48px;
-      margin-bottom: 14px;
+    @media screen and (max-width: 640px) {
+      input[type="text"] {
+        font-size: 16px !important;
+      }
     }
   </style>
 </head>
-<body>
-  <div class="wrap">
-    
-    <!-- Top Header Bar -->
-    <div class="header">
-      <div class="brand">
-        <div class="logo-badge">🛡️</div>
+<body
+  class="min-h-[100dvh] relative text-white flex flex-col items-center justify-start p-3 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(0.75rem+env(safe-area-inset-top,0px))] selection:bg-cyan-500 selection:text-black overflow-x-hidden font-sans"
+  style="background-image: radial-gradient(ellipse at 85% 15%, rgba(255, 140, 50, 0.15) 0%, transparent 45%), radial-gradient(ellipse at 15% 85%, rgba(0, 229, 255, 0.12) 0%, transparent 50%), url('/csam_theme_bg.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-color: #070C1A;"
+>
+  <!-- Cyber overlay -->
+  <div class="fixed inset-0 bg-[#070B18]/60 backdrop-brightness-95 pointer-events-none"></div>
+
+  <!-- Main Container matching Google AI Studio Original UI -->
+  <div class="w-full max-w-[620px] mx-auto relative z-10">
+    <!-- Glassmorphic Card -->
+    <div class="backdrop-blur-2xl bg-[#091126]/80 border border-white/15 rounded-[22px] sm:rounded-[26px] p-4 sm:p-7 shadow-[0_24px_64px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.12)] relative overflow-hidden">
+      <!-- Ambient Lighting -->
+      <div class="absolute -top-24 -right-24 w-64 h-64 bg-[#FF8C38]/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-[#00E5FF]/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Station Header (Top Nav) -->
+      <div class="w-full mb-5 text-center">
+        <div class="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/10">
+          <div class="flex items-center gap-2.5 text-left">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-900/40 font-black text-sm">
+              🛡️
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white tracking-wider flex items-center gap-1.5">
+                <span>BOOTHMASTER</span>
+                <span class="text-[10px] font-bold text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30">
+                  CSAM 2026
+                </span>
+              </div>
+              <div class="text-[10px] text-[#9BB0D3]">Vendor Station Scanner</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <!-- Sheets / Worker Live Status Badge -->
+            <div class="px-2.5 py-1.5 min-h-[38px] rounded-xl border text-xs font-semibold flex items-center gap-1.5 backdrop-blur-md bg-emerald-950/70 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+              <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16m-5 4v6m-4-6v6m-4-6v6" />
+              </svg>
+              <span id="dbBadgeText" class="hidden sm:inline">Sheets Live</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+            </div>
+
+            <!-- Sound Toggle Button -->
+            <button
+              id="soundToggleBtn"
+              onclick="toggleSound()"
+              class="p-2 min-h-[38px] min-w-[38px] rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 transition-all backdrop-blur-md active:scale-95 bg-white/10 text-emerald-400 border-white/20 hover:bg-white/15"
+              title="Toggle Audio Feedback"
+            >
+              <span id="soundIcon">🔊</span>
+            </button>
+
+            <!-- History Button -->
+            <button
+              onclick="openHistoryModal()"
+              class="px-2.5 py-1.5 min-h-[38px] rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-[#9BB0D3] hover:text-white flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              title="View Scan Logs"
+            >
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="hidden sm:inline">Scans</span>
+              <span id="headerScanCountBadge" class="bg-cyan-500 text-black text-[10px] px-1.5 py-0.2 rounded-full font-bold shadow-sm">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Heading -->
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+          CyberSecurity Awareness Month 2026
+        </h1>
+        <div class="text-xs sm:text-sm text-cyan-300/90 font-semibold mt-1 tracking-wide uppercase">
+          CyberMaster Challenge Scanner
+        </div>
+
+        <!-- Booth Station Dropdown Selector -->
+        <div class="relative inline-block mt-3 text-center">
+          <button
+            id="stationDropdownBtn"
+            onclick="toggleStationDropdown()"
+            class="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-black/45 hover:bg-black/60 border border-white/15 hover:border-cyan-400/50 text-white text-base sm:text-lg font-bold tracking-wide transition-all shadow-inner cursor-pointer"
+          >
+            <span id="selectedStationName" class="text-cyan-400 font-extrabold">VENDOR 1 — BOOTH 1</span>
+            <svg class="w-4 h-4 text-[#9BB0D3] group-hover:text-white transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <div id="stationDropdownMenu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden animate-scale-up">
+            <div class="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10">
+              Switch Booth Station
+            </div>
+            <div class="max-h-60 overflow-y-auto">
+              <button onclick="selectStation('B1', 'VENDOR 1 — BOOTH 1')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left border-l-2 border-cyan-400 bg-cyan-500/15">
+                <div>
+                  <div class="text-white font-semibold text-sm">VENDOR 1 — BOOTH 1</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Google Sheet Column: BoothQR1 (Col 6)</div>
+                </div>
+                <span class="text-xs font-bold text-amber-300">B1</span>
+              </button>
+              <button onclick="selectStation('B2', 'VENDOR 2 — BOOTH 2')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left text-[#9BB0D3]">
+                <div>
+                  <div class="text-white font-semibold text-sm">VENDOR 2 — BOOTH 2</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Google Sheet Column: BoothQR2 (Col 8)</div>
+                </div>
+                <span class="text-xs font-bold text-cyan-300">B2</span>
+              </button>
+              <button onclick="selectStation('B3', 'VENDOR 3 — BOOTH 3')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left text-[#9BB0D3]">
+                <div>
+                  <div class="text-white font-semibold text-sm">VENDOR 3 — BOOTH 3</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Google Sheet Column: BoothQR3 (Col 10)</div>
+                </div>
+                <span class="text-xs font-bold text-purple-300">B3</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scanner Viewport Bezel -->
+      <div id="scannerContainer" class="relative min-h-[280px] md:min-h-[310px] rounded-2xl backdrop-blur-xl border-2 border-cyan-400/60 bg-[#050A17]/65 shadow-[0_0_30px_rgba(6,182,212,0.2),inset_0_0_25px_rgba(6,182,212,0.08)] flex flex-col items-center justify-center overflow-hidden transition-all duration-300">
+        <!-- html5-qrcode DOM Target -->
+        <div id="reader" class="w-full h-full min-h-[280px] rounded-2xl overflow-hidden"></div>
+
+        <!-- Cyber Reticle Viewfinder & Laser Beam Overlay -->
+        <div id="viewfinderOverlay" class="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div id="reticleBox" class="relative w-56 h-56 border-2 border-cyan-400/60 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.25)] transition-colors duration-300">
+            <!-- Glowing Reticle Corners -->
+            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-cyan-400 rounded-tl shadow-[0_0_10px_#00E5FF]"></div>
+            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-cyan-400 rounded-tr shadow-[0_0_10px_#00E5FF]"></div>
+            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-cyan-400 rounded-bl shadow-[0_0_10px_#00E5FF]"></div>
+            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-cyan-400 rounded-br shadow-[0_0_10px_#00E5FF]"></div>
+            <!-- Laser scanning beam -->
+            <div class="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#00E5FF] to-transparent shadow-[0_0_14px_#00E5FF] animate-scan-line"></div>
+          </div>
+          <!-- Live Status Pill -->
+          <div class="absolute bottom-3 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-xl text-xs text-white border border-white/20 flex items-center gap-2 shadow-xl">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span id="scannerStatusText" class="font-medium tracking-wide">Camera live — Ready for attendee badges</span>
+          </div>
+        </div>
+
+        <!-- Idle placeholder when camera stopped -->
+        <div id="idleOverlay" class="hidden p-6 text-center flex flex-col items-center justify-center gap-3">
+          <div class="w-16 h-16 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/15 flex items-center justify-center text-cyan-400 shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white tracking-wide">Camera Inactive</h3>
+            <p class="text-xs text-[#9BB0D3] mt-1 max-w-xs leading-relaxed">
+              Tap below to launch continuous live scanning for attendee badges.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera Action Controls -->
+      <div class="flex flex-col gap-2 mt-3">
+        <div id="idleActionBtns" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button
+            onclick="startContinuousScanner()"
+            class="py-3.5 px-4 min-h-[44px] rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#00D2FF] to-[#0066FF] hover:from-[#26D9FF] hover:to-[#1A75FF] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/40 border border-cyan-300/30 cursor-pointer"
+          >
+            📷 Start Live Camera
+          </button>
+          <button
+            onclick="document.getElementById('qrPhotoInput').click()"
+            class="py-3.5 px-4 min-h-[44px] rounded-xl font-bold text-sm text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/15 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+          >
+            📁 Take / Upload QR Photo
+          </button>
+        </div>
+
+        <div id="activeActionControls" class="flex flex-col gap-2">
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              onclick="restartCameraStream()"
+              class="py-2.5 px-3 min-h-[44px] rounded-xl font-bold text-xs text-white backdrop-blur-xl bg-white/10 hover:bg-white/15 border border-white/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              🔄 Restart Camera
+            </button>
+            <button
+              onclick="pauseCameraStream()"
+              class="py-2.5 px-3 min-h-[44px] rounded-xl font-bold text-xs text-rose-200 backdrop-blur-xl bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              ⏹️ Pause Camera
+            </button>
+          </div>
+
+          <!-- In-stream Camera selector & Flip Camera Button -->
+          <div class="flex items-center justify-between gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10">
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+              <button
+                onclick="flipCamera()"
+                type="button"
+                class="p-1.5 min-h-[36px] rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-cyan-300 border border-white/15 transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                title="Flip Camera Front/Back"
+              >
+                🔄 <span class="text-[10px] font-bold">Flip</span>
+              </button>
+              <select
+                id="cameraSelect"
+                onchange="onSelectCamera(this.value)"
+                class="w-full text-xs bg-black/60 text-white border border-white/15 rounded-lg px-2 py-1.5 focus:outline-none focus:border-cyan-400 truncate min-h-[36px]"
+              >
+                <option value="">Rear Camera (Default)</option>
+              </select>
+            </div>
+            <button
+              id="torchBtn"
+              onclick="toggleTorch()"
+              class="hidden px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold backdrop-blur-md bg-white/10 text-white hover:bg-white/20 border border-white/15 shrink-0"
+            >
+              🔦 Flash
+            </button>
+          </div>
+        </div>
+
+        <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoUpload(this.files)" />
+      </div>
+
+      <!-- Scan Result Notification Card -->
+      <div id="resultCard" class="hidden mt-4 p-5 rounded-2xl text-center text-white shadow-2xl transition-all animate-scale-up">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-[11px] font-semibold text-emerald-300 border border-emerald-400/30 mb-2 shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Camera Ready — Next badge can scan now
+        </div>
+        <div id="resultTitle" class="text-xl font-extrabold tracking-wide uppercase my-1 text-emerald-300">
+          ✓ CHALLENGE COMPLETE
+        </div>
+        <div id="resultAttendeeBox" class="my-3 py-2 px-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/15 max-w-sm mx-auto shadow-inner">
+          <div id="resultAttendeeName" class="text-lg font-bold text-white tracking-tight">John Doe</div>
+          <div id="resultAttendeeOffice" class="text-xs text-white/80 mt-0.5 font-medium">Cyber Command</div>
+        </div>
+        <p id="resultMessage" class="text-sm text-white/95 my-2 leading-relaxed font-medium">
+          Participant badge scanned successfully!
+        </p>
+
+        <!-- Progress Box -->
+        <div id="resultProgressBox" class="my-4 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/15 max-w-sm mx-auto shadow-inner">
+          <div class="text-xs uppercase tracking-wider text-cyan-200 font-bold mb-1">
+            Event Passport Stamps
+          </div>
+          <div id="resultStampCount" class="text-3xl font-black text-white tracking-tight my-1">
+            1 / 3
+          </div>
+          <div class="w-full bg-white/20 h-2.5 rounded-full overflow-hidden my-2">
+            <div id="resultProgressBar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500" style="width: 33%;"></div>
+          </div>
+          <div id="raffleBadge" class="hidden inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-lg">
+            🎉 RAFFLE QUALIFIED!
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual Attendee Check-In Form (16px base font size prevents iOS zoom) -->
+      <div class="mt-5 pt-4 border-t border-white/10">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            Manual Attendee Check-In (Backup)
+          </span>
+          <span class="text-[10px] text-[#8E9BB5]">Type Token or ID</span>
+        </div>
+
+        <form onsubmit="handleManualSubmit(event)" class="flex gap-2">
+          <input
+            id="manualTokenInput"
+            type="text"
+            placeholder="Enter attendee token (e.g. CSAM-001)..."
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck="false"
+            inputMode="text"
+            class="flex-1 backdrop-blur-md bg-black/50 border border-white/15 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 rounded-xl px-3.5 py-2.5 text-base sm:text-xs text-white placeholder-[#7888A6] outline-none transition-colors min-h-[44px]"
+          />
+          <button
+            type="submit"
+            class="px-4 py-2.5 rounded-xl font-bold text-xs text-white backdrop-blur-md bg-white/10 hover:bg-white/15 border border-white/20 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md min-h-[44px]"
+          >
+            Verify Badge
+          </button>
+        </form>
+      </div>
+
+      <!-- Station Metrics Banner -->
+      <div class="mt-4 p-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-around text-center text-xs shadow-inner">
         <div>
-          <h1>CyberSecurity Awareness Month</h1>
-          <div class="sub">Vendor Challenge Verification Portal</div>
+          <div id="statTotalScans" class="text-base font-extrabold text-white tracking-tight">0</div>
+          <div class="text-[10px] text-[#9BB0D3] uppercase tracking-wider font-semibold">Total Scans</div>
         </div>
-      </div>
-      <div class="controls-top">
-        <button id="soundToggleBtn" class="icon-btn" onclick="toggleSound()">
-          <span id="soundIcon">🔊</span> Sound
-        </button>
+        <div class="w-px h-6 bg-white/10"></div>
+        <div>
+          <div id="statUniqueAttendees" class="text-base font-extrabold text-cyan-400 tracking-tight">0</div>
+          <div class="text-[10px] text-[#9BB0D3] uppercase tracking-wider font-semibold">Unique Attendees</div>
+        </div>
+        <div class="w-px h-6 bg-white/10"></div>
+        <div>
+          <div class="text-base font-extrabold text-emerald-400 tracking-tight">3 of 3</div>
+          <div class="text-[10px] text-[#9BB0D3] uppercase tracking-wider font-semibold">Raffle Target</div>
+        </div>
       </div>
     </div>
 
-    <!-- Error Screen (Shown if invalid token or failed auth) -->
-    <div id="authErrorCard" class="card error-screen" style="display: none;">
-      <div class="error-icon">⚠️</div>
-      <h2 style="margin: 0 0 8px; color: #ffb8c2;">Invalid Vendor Station</h2>
-      <p id="authErrorMessage" style="color: #cbd5e1; font-size: 14px; margin: 0 0 16px;">
-        Missing or unauthorized vendor token. Please use the personalized vendor link generated by the event organizer.
+    <!-- Footer info -->
+    <div class="mt-4 text-center text-xs text-[#8A9CBE] space-y-1">
+      <p>
+        Connected to Vendor Station: <strong id="footerStationName" class="text-white">VENDOR 1 — BOOTH 1</strong> (<span id="footerStationToken">B1</span>)
       </p>
-      <div style="font-size: 12px; color: #aeb8d0; background: #0e1527; padding: 12px; border-radius: 8px; border: 1px solid #232d47; word-break: break-all;">
-        Expected URL format: <br><code>https://.../exec?mode=vendor&t=YOUR_SECRET_TOKEN</code>
-      </div>
+      <p class="text-[11px] text-[#7284A5]">
+        CSAM 2026 QR Verification Portal • 100% Mobile Compatible & Live Google Sheets Sync.
+      </p>
     </div>
+  </div>
 
-    <!-- Main Active Vendor Station Card -->
-    <div id="mainCard" class="card">
-      
-      <!-- Station Banner -->
-      <div class="station-bar">
-        <div class="station-title">
-          <span id="stationBadge">📍 Connecting...</span>
-          <span id="stationVendorName" style="color: #fff; font-size: 13px; font-weight: normal;"></span>
+  <!-- Scan History Modal -->
+  <div id="historyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+    <div class="relative w-full max-w-2xl bg-[#151C31] border border-[#2B3554] rounded-2xl shadow-2xl overflow-hidden text-white flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#2B3554] bg-[#0E1424]">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-[#4F7CFF]/20 border border-[#4F7CFF]/40 flex items-center justify-center text-[#4F7CFF]">
+            🕒
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Station Check-in History</h3>
+            <p class="text-xs text-[#8E9BB5]">Attendee Check-in Logs</p>
+          </div>
         </div>
-        <div class="station-counter">
-          Scanned: <strong id="scanCount">0</strong>
-        </div>
-      </div>
-
-      <!-- Live QR Scanner Viewport -->
-      <div id="reader"></div>
-
-      <!-- Scanner Controls -->
-      <div class="scanner-tools">
-        <button id="scannerToggleBtn" class="btn btn-secondary" onclick="toggleCamera()">
-          📷 Pause Camera
-        </button>
-        <button class="btn btn-secondary" onclick="toggleManualDrawer()">
-          ⌨️ Manual Code
+        <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-lg bg-transparent hover:bg-[#202942] text-[#8E9BB5] hover:text-white flex items-center justify-center">
+          ✕
         </button>
       </div>
-
-      <!-- Manual Input Drawer -->
-      <div id="manualDrawer" class="manual-box">
-        <label style="font-size: 12px; font-weight: bold; color: #aeb8d0;">MANUAL ATTENDEE CHECK-IN (Paste QR URL or Token)</label>
-        <div class="input-row">
-          <input id="manualTokenInput" placeholder="Enter attendee token or paste QR URL..." onkeydown="if(event.key==='Enter')submitManualScan()">
-          <button class="btn btn-primary" onclick="submitManualScan()" id="manualSubmitBtn">Verify</button>
-        </div>
-      </div>
-
-      <!-- Dynamic Scan Result Feedback -->
-      <div id="scanOutcome" class="outcome-box">
-        <div class="outcome-title" id="outcomeTitle"></div>
-        <div class="outcome-name" id="outcomeName"></div>
-        <div class="outcome-office" id="outcomeOffice"></div>
-        <div class="stats-row">
-          <span id="outcomeProgress" style="font-size: 13px; font-weight: bold;"></span>
-          <span id="outcomeRaffleBadge" class="pill"></span>
-          <span id="outcomeIdBadge" style="font-size: 12px; color: #aeb8d0; margin-left: auto; font-family: monospace;"></span>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Station Scan History Card -->
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <h3 style="margin: 0; font-size: 16px; font-weight: 800;">Station Check-In History</h3>
-        <span style="font-size: 12px; color: #aeb8d0;" id="historyTotalLabel">0 records</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
+      <div class="p-4 flex-1 overflow-y-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="text-[#8E9BB5] border-b border-white/10 uppercase text-[10px]">
             <tr>
-              <th>Time</th>
-              <th>Participant</th>
-              <th>Office</th>
-              <th>Progress</th>
-              <th>Status</th>
+              <th class="py-2">Time</th>
+              <th class="py-2">Attendee</th>
+              <th class="py-2">Booth</th>
+              <th class="py-2">Status</th>
             </tr>
           </thead>
           <tbody id="historyTableBody">
             <tr>
-              <td colspan="5" class="empty-state">No scans recorded yet at this station.</td>
+              <td colspan="4" class="text-center py-6 text-[#8E9BB5]">No scans recorded yet.</td>
             </tr>
           </tbody>
         </table>
       </div>
+      <div class="p-3 border-t border-[#2B3554] flex justify-end gap-2 bg-[#0E1424]">
+        <button onclick="exportCSV()" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 font-bold text-xs text-white">Export CSV</button>
+        <button onclick="closeHistoryModal()" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-xs text-white">Close</button>
+      </div>
     </div>
-
   </div>
 
   <script>
-    // Injected by Google Apps Script doGet() template evaluation:
-    const VENDOR_TOKEN = <?!= JSON.stringify(vendorToken) ?>;
-
-    let html5QrCode = null;
-    let isCameraRunning = false;
+    // State
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAeLqizAvH2HGjbQF0eG7rPaf0RTNE41NfC6Xob5fRJINICFsNvIETXNZj08l9DK3A/exec';
+    let currentStation = { id: 'B1', name: 'VENDOR 1 — BOOTH 1', token: 'B1' };
+    let scans = JSON.parse(localStorage.getItem('csam_vendor_scans_prod') || '[]');
+    let html5QrScanner = null;
+    let soundEnabled = localStorage.getItem('csam_sound_enabled') !== 'false';
+    let cameras = [];
+    let selectedCameraId = '';
+    let torchOn = false;
     let isProcessing = false;
-    let soundEnabled = true;
-    let currentVendor = '';
-    let scanCount = 0;
-    const historyItems = [];
-
-    // --- Web Audio API Chimes ---
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let lastScanned = { text: '', time: 0 };
     let audioCtx = null;
 
-    function playChime(type) {
+    // Web Audio Synthesizer
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    // Auto-unlock audio on mobile touch
+    const unlockAudio = () => {
+      getAudioCtx();
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', unlockAudio);
+    };
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('click', unlockAudio, { passive: true });
+
+    function playSound(type) {
       if (!soundEnabled) return;
       try {
-        if (!audioCtx) audioCtx = new AudioCtx();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const now = audioCtx.currentTime;
-
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
         if (type === 'success') {
-          // Cheerful ascending major triad
-          [523.25, 659.25, 783.99].forEach((freq, idx) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
             osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-            gain.gain.setValueAtTime(0.12, now + idx * 0.08);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
+            gain.gain.setValueAtTime(0.0001, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.2, now + idx * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.35);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(ctx.destination);
             osc.start(now + idx * 0.08);
-            osc.stop(now + idx * 0.08 + 0.23);
+            osc.stop(now + idx * 0.08 + 0.36);
           });
         } else if (type === 'duplicate') {
-          // Warning double tone
-          [440, 370].forEach((freq, idx) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-            gain.gain.setValueAtTime(0.14, now + idx * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.18);
+          [440, 440].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+            gain.gain.setValueAtTime(0.0001, now + idx * 0.15);
+            gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.15 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.15 + 0.14);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + idx * 0.12);
-            osc.stop(now + idx * 0.12 + 0.19);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.15);
+            osc.stop(now + idx * 0.15 + 0.15);
           });
         } else if (type === 'fanfare') {
-          // Raffle qualified celebration fanfare
-          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
-            gain.gain.setValueAtTime(0.18, now + idx * 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.35);
+          [{ f: 523.25, t: 0.0, d: 0.12 }, { f: 659.25, t: 0.12, d: 0.12 }, { f: 783.99, t: 0.24, d: 0.12 }, { f: 1046.5, t: 0.38, d: 0.45 }].forEach(n => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(n.f, now + n.t);
+            gain.gain.setValueAtTime(0.001, now + n.t);
+            gain.gain.exponentialRampToValueAtTime(0.22, now + n.t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + idx * 0.1);
-            osc.stop(now + idx * 0.1 + 0.36);
+            gain.connect(ctx.destination);
+            osc.start(now + n.t);
+            osc.stop(now + n.t + n.d + 0.02);
           });
-        } else if (type === 'error') {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(190, now);
-          osc.frequency.linearRampToValueAtTime(140, now + 0.2);
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.23);
         }
-      } catch (e) {
-        console.warn('Audio feedback failed:', e);
+      } catch (e) {}
+    }
+
+    function triggerHaptic(type) {
+      if ('vibrate' in navigator) {
+        try {
+          if (type === 'success') navigator.vibrate([40, 40, 50]);
+          else if (type === 'duplicate') navigator.vibrate([70, 40, 70]);
+          else if (type === 'failure') navigator.vibrate([120]);
+          else navigator.vibrate(20);
+        } catch (e) {}
       }
     }
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
+      localStorage.setItem('csam_sound_enabled', String(soundEnabled));
       document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
+      triggerHaptic('tap');
+      if (soundEnabled) playSound('success');
     }
 
-    // --- Initialization & Station Authentication ---
-    function init() {
-      if (!VENDOR_TOKEN) {
-        showAuthError('Missing vendor station token (?mode=vendor&t=...). Please use the personalized vendor link provided by the event coordinator.');
-        return;
-      }
-
-      // Check if running inside Google Apps Script iframe
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(onStationValidated)
-          .withFailureHandler(onStationAuthFailed)
-          .validateVendorStation(VENDOR_TOKEN);
-      } else {
-        // Fallback for standalone/local testing
-        console.warn('google.script.run not found, running in standalone preview mode.');
-        onStationValidated({ ok: true, vendor: 'Booth 1' });
-      }
+    function toggleStationDropdown() {
+      triggerHaptic('tap');
+      const menu = document.getElementById('stationDropdownMenu');
+      menu.classList.toggle('hidden');
     }
 
-    function showAuthError(msg) {
-      document.getElementById('mainCard').style.display = 'none';
-      document.getElementById('authErrorCard').style.display = 'block';
-      document.getElementById('authErrorMessage').textContent = msg;
+    function selectStation(token, name) {
+      triggerHaptic('tap');
+      currentStation = { id: token, token: token, name: name };
+      document.getElementById('selectedStationName').textContent = name;
+      document.getElementById('footerStationName').textContent = name;
+      document.getElementById('footerStationToken').textContent = token;
+      document.getElementById('stationDropdownMenu').classList.add('hidden');
+      updateStats();
     }
 
-    function onStationAuthFailed(err) {
-      showAuthError(err.message || 'Unauthorized vendor station. This station token is not valid.');
+    function updateStats() {
+      const stationScans = scans.filter(s => s.vendorId === currentStation.id || s.vendorToken === currentStation.token);
+      const unique = new Set(stationScans.map(s => s.participantToken)).size;
+      document.getElementById('statTotalScans').textContent = stationScans.length;
+      document.getElementById('statUniqueAttendees').textContent = unique;
+      document.getElementById('headerScanCountBadge').textContent = stationScans.length;
     }
 
-    function onStationValidated(res) {
-      currentVendor = res.vendor || 'Booth 1';
-      document.getElementById('stationBadge').textContent = '📍 ' + currentVendor;
-      document.getElementById('stationVendorName').textContent = '— Challenge Ready';
-      startCamera();
-    }
-
-    // --- QR Scanner Lifecycle ---
-    function startCamera() {
-      html5QrCode = new Html5Qrcode('reader');
-      const config = {
-        fps: 10,
-        qrbox: { width: 240, height: 240 },
-        aspectRatio: 1.0
-      };
-
-      html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        onQrCodeScanned,
-        function (errorMessage) {
-          // Ignored per-frame search noise
-        }
-      ).then(() => {
-        isCameraRunning = true;
-        document.getElementById('scannerToggleBtn').textContent = '📷 Pause Camera';
-      }).catch(err => {
-        console.warn('Camera autostart failed, switching to manual mode:', err);
-        isCameraRunning = false;
-        document.getElementById('scannerToggleBtn').textContent = '📷 Start Camera';
-        document.getElementById('manualDrawer').style.display = 'block';
-      });
-    }
-
-    function toggleCamera() {
-      if (!html5QrCode) return;
-      if (isCameraRunning) {
-        html5QrCode.stop().then(() => {
-          isCameraRunning = false;
-          document.getElementById('scannerToggleBtn').textContent = '📷 Start Camera';
-        });
-      } else {
-        startCamera();
-      }
-    }
-
-    function toggleManualDrawer() {
-      const drawer = document.getElementById('manualDrawer');
-      drawer.style.display = drawer.style.display === 'block' ? 'none' : 'block';
-      if (drawer.style.display === 'block') {
-        document.getElementById('manualTokenInput').focus();
-      }
-    }
-
-    // --- QR Token Extraction & Verification ---
-    function extractToken(decodedText) {
-      if (!decodedText) return '';
-      let text = decodedText.trim();
-      // If URL formatted: https://script.google.com/.../exec?mode=register&p=CSAM_TOKEN
+    // Camera Management
+    async function initCamera() {
       try {
-        if (text.includes('?')) {
-          const params = new URLSearchParams(text.split('?')[1]);
-          if (params.has('p')) return params.get('p');
-          if (params.has('token')) return params.get('token');
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          cameras = devices;
+          const select = document.getElementById('cameraSelect');
+          select.innerHTML = '';
+          const backCam = devices.find(d => /back|rear|environment/i.test(d.label));
+          selectedCameraId = backCam ? backCam.id : devices[0].id;
+          devices.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.label || `Camera ${c.id.substring(0, 5)}`;
+            if (c.id === selectedCameraId) opt.selected = true;
+            select.appendChild(opt);
+          });
         }
       } catch (e) {}
-      return text;
+      startContinuousScanner();
     }
 
-    function onQrCodeScanned(decodedText) {
-      if (isProcessing) return;
-      const participantToken = extractToken(decodedText);
-      if (!participantToken) return;
+    async function startContinuousScanner() {
+      document.getElementById('idleOverlay').classList.add('hidden');
+      document.getElementById('viewfinderOverlay').classList.remove('hidden');
+      document.getElementById('idleActionBtns').classList.add('hidden');
+      document.getElementById('activeActionControls').classList.remove('hidden');
 
-      processScan(participantToken);
-    }
+      if (html5QrScanner) {
+        try {
+          if (html5QrScanner.isScanning) await html5QrScanner.stop();
+          await html5QrScanner.clear();
+        } catch (e) {}
+      }
 
-    function submitManualScan() {
-      const input = document.getElementById('manualTokenInput');
-      const raw = input.value.trim();
-      if (!raw) return;
-      const participantToken = extractToken(raw);
-      input.value = '';
-      processScan(participantToken);
-    }
+      html5QrScanner = new Html5Qrcode('reader');
 
-    function processScan(participantToken) {
-      isProcessing = true;
+      // Responsive QR box for 100% mobile compatibility
+      const config = {
+        fps: 15,
+        qrbox: (w, h) => {
+          const edge = Math.min(w, h);
+          const size = Math.floor(edge * 0.72);
+          return { width: Math.max(180, Math.min(260, size)), height: Math.max(180, Math.min(260, size)) };
+        },
+        aspectRatio: 1.0,
+      };
 
-      // Show temporary processing state
-      const outcome = document.getElementById('scanOutcome');
-      outcome.className = 'outcome-box';
-      outcome.style.display = 'block';
-      outcome.style.border = '1px solid #4f7cff';
-      outcome.style.background = '#151c31';
-      document.getElementById('outcomeTitle').innerHTML = '⏳ Verifying Attendee...';
-      document.getElementById('outcomeName').textContent = 'Contacting event server';
-      document.getElementById('outcomeOffice').textContent = 'Please hold QR code steady';
-      document.getElementById('outcomeProgress').textContent = '';
-      document.getElementById('outcomeRaffleBadge').style.display = 'none';
-      document.getElementById('outcomeIdBadge').textContent = '';
+      const onScan = (decodedText) => {
+        const now = Date.now();
+        if (isProcessing) return;
+        if (lastScanned.text === decodedText && now - lastScanned.time < 8000) return;
+        if (now - lastScanned.time < 1500) return;
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(handleScanResult)
-          .withFailureHandler(handleScanError)
-          .recordVendorScan(VENDOR_TOKEN, participantToken);
-      } else {
-        // Standalone mock response for preview/fallback
-        setTimeout(() => {
-          handleScanResult({
-            ok: true,
-            duplicate: false,
-            participantId: 'CSAM-' + Math.floor(100 + Math.random() * 900),
-            name: 'Alex Rivera',
-            office: 'SecOps & Cloud Engineering',
-            vendor: currentVendor,
-            completion: 5,
-            total: 5,
-            raffleQualified: true
-          });
-        }, 600);
+        lastScanned = { text: decodedText, time: now };
+        isProcessing = true;
+        processBadgeScan(decodedText);
+        setTimeout(() => { isProcessing = false; }, 1800);
+      };
+
+      try {
+        if (selectedCameraId) {
+          await html5QrScanner.start(selectedCameraId, config, onScan, () => {});
+        } else {
+          await html5QrScanner.start({ facingMode: { ideal: 'environment' } }, config, onScan, () => {});
+        }
+      } catch (err) {
+        try {
+          await html5QrScanner.start({ facingMode: 'environment' }, config, onScan, () => {});
+        } catch (e2) {
+          console.warn('Camera fallback to user', e2);
+          await html5QrScanner.start({ facingMode: 'user' }, config, onScan, () => {});
+        }
       }
     }
 
-    function handleScanResult(res) {
-      const outcome = document.getElementById('scanOutcome');
-      outcome.style.display = 'block';
+    async function pauseCameraStream() {
+      if (html5QrScanner) {
+        try {
+          if (html5QrScanner.isScanning) await html5QrScanner.stop();
+        } catch (e) {}
+      }
+      document.getElementById('idleOverlay').classList.remove('hidden');
+      document.getElementById('viewfinderOverlay').classList.add('hidden');
+      document.getElementById('idleActionBtns').classList.remove('hidden');
+      document.getElementById('activeActionControls').classList.add('hidden');
+    }
 
-      const isDup = !!res.duplicate;
-      outcome.className = 'outcome-box ' + (isDup ? 'outcome-duplicate' : 'outcome-success');
+    async function restartCameraStream() {
+      triggerHaptic('tap');
+      await pauseCameraStream();
+      setTimeout(startContinuousScanner, 200);
+    }
+
+    async function flipCamera() {
+      triggerHaptic('tap');
+      if (cameras.length < 2) return;
+      const idx = cameras.findIndex(c => c.id === selectedCameraId);
+      const nextIdx = (idx + 1) % cameras.length;
+      selectedCameraId = cameras[nextIdx].id;
+      document.getElementById('cameraSelect').value = selectedCameraId;
+      await restartCameraStream();
+    }
+
+    async function onSelectCamera(newId) {
+      selectedCameraId = newId;
+      await restartCameraStream();
+    }
+
+    // Badge Check-In Processing with Google Sheets & Cloudflare Worker
+    async function processBadgeScan(rawText) {
+      let token = rawText.trim();
+      try {
+        if (token.startsWith('http://') || token.startsWith('https://')) {
+          const u = new URL(token);
+          token = u.searchParams.get('p') || u.searchParams.get('participant') || token;
+        } else if (token.startsWith('{') && token.endsWith('}')) {
+          const parsed = JSON.parse(token);
+          token = parsed.p || parsed.token || token;
+        }
+      } catch (e) {}
+
+      // Normalize token: remove non-alphanumeric except hyphen
+      const cleanToken = token.toUpperCase().trim();
+
+      const payload = {
+        action: 'qr_checkin',
+        vendorToken: currentStation.token,
+        participantId: cleanToken,
+        scannedQrData: cleanToken,
+        stationId: currentStation.id,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Check local duplicates
+      const isLocalDup = scans.some(s => 
+        (s.vendorId === currentStation.id || s.vendorToken === currentStation.token) &&
+        s.participantToken === cleanToken
+      );
+
+      // Submit to Google Sheets (direct or via worker)
+      let backendRes = null;
+      try {
+        const response = await fetch(window.location.origin === 'null' ? GOOGLE_SCRIPT_URL : window.location.pathname === '/Vendor.html' ? GOOGLE_SCRIPT_URL : '/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+        });
+        backendRes = await response.json();
+      } catch (e) {
+        // Local fallback if offline
+        backendRes = {
+          success: !isLocalDup,
+          duplicate: isLocalDup,
+          participantId: cleanToken,
+          name: 'Participant ' + cleanToken,
+          office: 'Attendee',
+          completion: isLocalDup ? 1 : 2,
+          total: 3,
+          raffleQualified: !isLocalDup,
+          message: isLocalDup ? 'Duplicate Scan' : 'Check-in recorded locally',
+        };
+      }
+
+      const isDup = backendRes.duplicate || isLocalDup;
+      const card = document.getElementById('resultCard');
+      card.classList.remove('hidden');
 
       if (isDup) {
-        document.getElementById('outcomeTitle').innerHTML = '⚠️ Already Completed';
-        playChime('duplicate');
+        playSound('duplicate');
+        triggerHaptic('duplicate');
+        card.className = 'mt-4 p-5 rounded-2xl text-center text-white shadow-2xl transition-all animate-scale-up backdrop-blur-2xl bg-[#2b1f09]/85 border-2 border-amber-400/50 shadow-[0_16px_48px_rgba(245,158,11,0.35)]';
+        document.getElementById('resultTitle').className = 'text-xl font-extrabold tracking-wide uppercase my-1 text-amber-300';
+        document.getElementById('resultTitle').textContent = '⛔ DUPLICATE SCAN REJECTED';
+        document.getElementById('resultMessage').textContent = backendRes.message || `Attendee already checked in at ${currentStation.name}. Only 1 stamp per booth.`;
       } else {
-        document.getElementById('outcomeTitle').innerHTML = '✅ Passport Stamp Awarded!';
-        scanCount++;
-        document.getElementById('scanCount').textContent = scanCount;
+        triggerHaptic('success');
+        card.className = 'mt-4 p-5 rounded-2xl text-center text-white shadow-2xl transition-all animate-scale-up backdrop-blur-2xl bg-[#082417]/85 border-2 border-emerald-400/50 shadow-[0_16px_48px_rgba(16,185,129,0.35)]';
+        document.getElementById('resultTitle').className = 'text-xl font-extrabold tracking-wide uppercase my-1 text-emerald-300';
+        document.getElementById('resultTitle').textContent = '✓ CHALLENGE COMPLETE';
+        document.getElementById('resultMessage').textContent = backendRes.message || `Stamp successfully awarded at ${currentStation.name}!`;
 
-        if (res.raffleQualified) {
-          playChime('fanfare');
-          triggerConfetti();
+        if (backendRes.raffleQualified) {
+          playSound('fanfare');
+          try {
+            confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+          } catch (e) {}
         } else {
-          playChime('success');
+          playSound('success');
         }
       }
 
-      document.getElementById('outcomeName').textContent = res.name || 'Participant';
-      document.getElementById('outcomeOffice').textContent = res.office || '';
-      document.getElementById('outcomeProgress').textContent = 'Total Progress: ' + (res.completion || 0) + '/' + (res.total || 5);
+      document.getElementById('resultAttendeeName').textContent = backendRes.name || cleanToken;
+      document.getElementById('resultAttendeeOffice').textContent = backendRes.office || 'Attendee';
+      const comp = backendRes.completion || (isDup ? 1 : 2);
+      const tot = backendRes.total || 3;
+      document.getElementById('resultStampCount').textContent = `${comp} / ${tot}`;
+      const pct = Math.min(100, Math.round((comp / tot) * 100));
+      document.getElementById('resultProgressBar').style.width = pct + '%';
       
-      const raffleBadge = document.getElementById('outcomeRaffleBadge');
-      raffleBadge.style.display = 'inline-flex';
-      if (res.raffleQualified) {
-        raffleBadge.className = 'pill pill-qualified';
-        raffleBadge.textContent = '🏆 RAFFLE QUALIFIED';
+      const raffleBadge = document.getElementById('raffleBadge');
+      if (backendRes.raffleQualified) {
+        raffleBadge.classList.remove('hidden');
       } else {
-        raffleBadge.className = 'pill pill-pending';
-        raffleBadge.textContent = 'IN PROGRESS';
+        raffleBadge.classList.add('hidden');
       }
 
-      document.getElementById('outcomeIdBadge').textContent = res.participantId || '';
-
-      // Add to Station Scan History table
-      addHistoryRecord(res, isDup);
-
-      // Reset throttle lock after 2.5 seconds
-      setTimeout(() => {
-        isProcessing = false;
-      }, 2500);
+      // Record in logs
+      scans.unshift({
+        timestamp: Date.now(),
+        participantToken: cleanToken,
+        participantName: backendRes.name || cleanToken,
+        participantOffice: backendRes.office || 'Attendee',
+        vendorId: currentStation.id,
+        vendorName: currentStation.name,
+        vendorToken: currentStation.token,
+        isDuplicate: isDup,
+      });
+      localStorage.setItem('csam_vendor_scans_prod', JSON.stringify(scans));
+      updateStats();
     }
 
-    function handleScanError(err) {
-      playChime('error');
-      const outcome = document.getElementById('scanOutcome');
-      outcome.className = 'outcome-box outcome-error';
-      outcome.style.display = 'block';
-      document.getElementById('outcomeTitle').innerHTML = '❌ Scan Rejected';
-      document.getElementById('outcomeName').textContent = err.message || 'Participant QR is not registered';
-      document.getElementById('outcomeOffice').textContent = 'Ask attendee to refresh their pass or verify at organizer helpdesk';
-      document.getElementById('outcomeProgress').textContent = '';
-      document.getElementById('outcomeRaffleBadge').style.display = 'none';
-      document.getElementById('outcomeIdBadge').textContent = '';
-
-      setTimeout(() => {
-        isProcessing = false;
-      }, 2000);
+    function handleManualSubmit(e) {
+      e.preventDefault();
+      triggerHaptic('tap');
+      const input = document.getElementById('manualTokenInput');
+      const val = input.value.trim();
+      if (!val) return;
+      processBadgeScan(val);
+      input.value = '';
     }
 
-    function addHistoryRecord(res, isDup) {
+    // Modal
+    function openHistoryModal() {
+      triggerHaptic('tap');
       const tbody = document.getElementById('historyTableBody');
-      if (historyItems.length === 0) {
-        tbody.innerHTML = '';
+      if (scans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-[#8E9BB5]">No scans recorded yet.</td></tr>';
+      } else {
+        tbody.innerHTML = scans.map(s => `
+          <tr class="border-b border-white/5 hover:bg-white/5">
+            <td class="py-2.5 text-[#8E9BB5]">${new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+            <td class="py-2.5 font-bold text-white">${s.participantName} <div class="text-[10px] text-[#8E9BB5]">${s.participantToken}</div></td>
+            <td class="py-2.5 text-cyan-300 font-semibold">${s.vendorToken || s.vendorId}</td>
+            <td class="py-2.5">${s.isDuplicate ? '<span class="text-amber-400 font-bold">Duplicate</span>' : '<span class="text-emerald-400 font-bold">Stamped</span>'}</td>
+          </tr>
+        `).join('');
       }
-
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      historyItems.unshift({ res, isDup, timeStr });
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="color:#aeb8d0; font-family:monospace;">${timeStr}</td>
-        <td><strong>${escapeHtml(res.name || res.participantId)}</strong><br><span style="font-size:11px; color:#8ba0c8;">${escapeHtml(res.participantId || '')}</span></td>
-        <td style="color:#cbd5e1; font-size:12px;">${escapeHtml(res.office || '—')}</td>
-        <td>${res.completion || 0}/${res.total || 5}</td>
-        <td>
-          <span class="pill ${isDup ? 'pill-pending' : 'pill-qualified'}" style="font-size:11px; padding:3px 8px;">
-            ${isDup ? 'DUPLICATE' : 'AWARDED'}
-          </span>
-        </td>
-      `;
-      tbody.insertBefore(tr, tbody.firstChild);
-      document.getElementById('historyTotalLabel').textContent = historyItems.length + ' records';
+      document.getElementById('historyModal').classList.remove('hidden');
     }
 
-    function triggerConfetti() {
-      if (typeof confetti === 'function') {
-        confetti({
-          particleCount: 75,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
     }
 
-    function escapeHtml(s) {
-      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[c]));
+    function exportCSV() {
+      if (scans.length === 0) return;
+      const headers = ['Timestamp', 'Date Time', 'Booth', 'Token', 'Name', 'Office', 'Status'];
+      const rows = scans.map(s => [
+        s.timestamp,
+        new Date(s.timestamp).toLocaleString(),
+        `"${s.vendorName}"`,
+        s.participantToken,
+        `"${s.participantName}"`,
+        `"${s.participantOffice}"`,
+        s.isDuplicate ? 'Duplicate' : 'Success',
+      ]);
+      const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.href = encodeURI(csv);
+      link.download = `booth-scans-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
     }
 
-    // Auto-boot on load
-    window.addEventListener('DOMContentLoaded', init);
+    // Start on mount
+    window.addEventListener('DOMContentLoaded', () => {
+      updateStats();
+      initCamera();
+    });
   </script>
 </body>
 </html>

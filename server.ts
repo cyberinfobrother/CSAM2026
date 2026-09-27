@@ -718,7 +718,8 @@ app.post('/api/backend/test', async (req, res) => {
   } catch (err: any) {
     // Fallback diagnostic GET check for Cloudflare Worker
     try {
-      const getRes = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
+      const getUrl = targetUrl + (targetUrl.includes('?') ? '&' : '?') + 'format=json';
+      const getRes = await fetch(getUrl, { method: 'GET', redirect: 'follow', headers: { Accept: 'application/json' } });
       if (getRes.ok) {
         const getJson = await getRes.json();
         if (getJson.status === 'ONLINE' || getJson.service) {

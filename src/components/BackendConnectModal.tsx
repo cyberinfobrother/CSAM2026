@@ -504,30 +504,19 @@ export default {
     const googleScriptUrl =
       (env && env.GOOGLE_SCRIPT_URL) || DEFAULT_GOOGLE_SCRIPT_URL;
 
-    // 2. Browser GUI vs API Diagnostic Route
+    // 2. Diagnostic GET Route
     if (request.method === "GET") {
       const url = new URL(request.url);
-      const acceptHeader = request.headers.get("accept") || "";
-      const isJsonRequested =
-        url.searchParams.get("format") === "json" ||
-        url.pathname === "/health" ||
-        url.pathname === "/api" ||
-        (acceptHeader.includes("application/json") && !acceptHeader.includes("text/html"));
-
-      if (isJsonRequested) {
-        return jsonResponse({
-          status: "ONLINE",
-          service: "CSAM 2026 Boothmaster QR Proxy Worker",
-          timestamp: new Date().toISOString(),
-          googleScriptConfigured: Boolean(googleScriptUrl),
-          targetColumns: ["BoothQR1 (Col 6)", "BoothQR2 (Col 8)", "BoothQR3 (Col 10)"],
-        });
+      if (url.pathname === "/app" || url.searchParams.get("open") === "app") {
+        return Response.redirect("https://ais-pre-qa4a4yyutoy7aazehq43ea-607520250010.asia-southeast1.run.app", 302);
       }
-
-      // Serve Full Interactive Standalone Scanner GUI when visited via browser!
-      return new Response(renderStandaloneScannerHtml(googleScriptUrl), {
-        status: 200,
-        headers: { "Content-Type": "text/html;charset=utf-8", ...CORS_HEADERS },
+      return jsonResponse({
+        status: "ONLINE",
+        service: "CSAM 2026 Boothmaster QR Proxy Worker",
+        timestamp: new Date().toISOString(),
+        googleScriptConfigured: Boolean(googleScriptUrl),
+        appUrl: "https://ais-pre-qa4a4yyutoy7aazehq43ea-607520250010.asia-southeast1.run.app",
+        targetColumns: ["BoothQR1 (Col 6)", "BoothQR2 (Col 8)", "BoothQR3 (Col 10)"],
       });
     }
 

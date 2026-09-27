@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode, CameraDevice } from 'html5-qrcode';
 import { Camera, Flashlight, SwitchCamera, Upload, RefreshCw, CheckCircle2, VideoOff } from 'lucide-react';
+import { triggerHaptic } from '../utils/audio';
 
 interface QRScannerViewProps {
   onScanSuccess: (decodedText: string) => void;
@@ -92,9 +93,17 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       const scanner = new Html5Qrcode(elementId);
       scannerRef.current = scanner;
 
+      // Mobile-optimized dynamic QR box (scales with viewport screen width/height)
       const config = {
         fps: 15,
-        qrbox: { width: 250, height: 250 },
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const size = Math.floor(minEdge * 0.72);
+          return {
+            width: Math.max(180, Math.min(260, size)),
+            height: Math.max(180, Math.min(260, size)),
+          };
+        },
         aspectRatio: 1.0,
       };
 
@@ -119,6 +128,9 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         // Visual flash indication on the viewfinder
         setScanFlash(true);
         setScannerStatus('Processing badge scan...');
+
+        // Haptic feedback on physical mobile device
+        triggerHaptic('success');
 
         // Send to parent handler
         onScanSuccess(decodedText);
@@ -242,6 +254,17 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       setTimeout(() => {
         startCameraStream(newId);
       }, 150);
+    }
+  };
+
+  // Flip camera front/back with one touch (optimized for mobile phones)
+  const handleFlipCamera = async () => {
+    if (cameras.length < 2) return;
+    const currentIndex = cameras.findIndex((c) => c.id === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % cameras.length;
+    const nextCam = cameras[nextIndex];
+    if (nextCam) {
+      await handleCameraChange(nextCam.id);
     }
   };
 
@@ -438,12 +461,20 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
             {/* In-stream camera controls */}
             <div className="flex items-center justify-between gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10">
               {cameras.length > 1 ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <SwitchCamera className="w-4 h-4 text-[#9BB0D3] shrink-0" />
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <button
+                    onClick={handleFlipCamera}
+                    type="button"
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-cyan-300 border border-white/15 transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                    title="Flip camera front/back"
+                  >
+                    <SwitchCamera className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold hidden xs:inline">Flip</span>
+                  </button>
                   <select
                     value={selectedCameraId}
                     onChange={(e) => handleCameraChange(e.target.value)}
-                    className="w-full text-xs bg-black/50 text-white border border-white/15 rounded-lg px-2 py-1.5 focus:outline-none focus:border-cyan-400"
+                    className="w-full text-xs bg-black/60 text-white border border-white/15 rounded-lg px-2 py-1.5 focus:outline-none focus:border-cyan-400 truncate"
                   >
                     {cameras.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -462,7 +493,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
               {torchSupported && (
                 <button
                   onClick={toggleTorch}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 ${
                     torchOn
                       ? 'bg-[#FFC700] text-black font-bold shadow-[0_0_12px_#FFC700]'
                       : 'backdrop-blur-md bg-white/10 text-white hover:bg-white/20 border border-white/15'

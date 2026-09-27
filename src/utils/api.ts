@@ -287,7 +287,8 @@ export async function testBackendConnection(
     };
   } catch (err: any) {
     try {
-      const getRes = await fetch(targetUrl, { method: 'GET' });
+      const getUrl = targetUrl + (targetUrl.includes('?') ? '&' : '?') + 'format=json';
+      const getRes = await fetch(getUrl, { method: 'GET', headers: { Accept: 'application/json' } });
       if (getRes.ok) {
         const getJson = await getRes.json();
         if (getJson.status === 'ONLINE' || getJson.service) {

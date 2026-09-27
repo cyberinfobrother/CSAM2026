@@ -10,7 +10,7 @@ import {
   saveStoredVendorId,
 } from './data/mockData';
 import { VendorStation, Participant, ScanRecord, ScanOutcome, ModalState } from './types';
-import { soundFx } from './utils/audio';
+import { soundFx, triggerHaptic } from './utils/audio';
 import { StationHeader } from './components/StationHeader';
 import { QRScannerView } from './components/QRScannerView';
 import { ScanResultCard } from './components/ScanResultCard';
@@ -137,6 +137,7 @@ export default function App() {
     async (rawText: string) => {
       if (!rawText || !rawText.trim()) {
         soundFx.playFailure();
+        triggerHaptic('failure');
         setOutcome({
           type: 'failure',
           title: '❌ Scan Rejected',
@@ -179,6 +180,7 @@ export default function App() {
 
         if (isDuplicate) {
           soundFx.playDuplicate();
+          triggerHaptic('duplicate');
           setOutcome({
             type: 'duplicate',
             title: '⛔ DUPLICATE SCAN REJECTED',
@@ -200,6 +202,7 @@ export default function App() {
           } else {
             soundFx.playSuccess();
           }
+          triggerHaptic('success');
 
           setOutcome({
             type: 'success',
@@ -419,7 +422,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen relative text-white flex flex-col items-center justify-start p-4 sm:p-6 selection:bg-cyan-500 selection:text-black overflow-x-hidden"
+      className="min-h-[100dvh] relative text-white flex flex-col items-center justify-start p-3 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(0.75rem+env(safe-area-inset-top,0px))] selection:bg-cyan-500 selection:text-black overflow-x-hidden"
       style={{
         backgroundImage: `radial-gradient(ellipse at 85% 15%, rgba(255, 140, 50, 0.15) 0%, transparent 45%), radial-gradient(ellipse at 15% 85%, rgba(0, 229, 255, 0.12) 0%, transparent 50%), url('/csam_theme_bg.jpg')`,
         backgroundSize: 'cover',
@@ -434,7 +437,7 @@ export default function App() {
       {/* Container */}
       <div className="w-full max-w-[620px] mx-auto relative z-10">
         {/* Main Card - Glassmorphism */}
-        <div className="backdrop-blur-2xl bg-[#091126]/75 border border-white/15 rounded-[26px] p-5 sm:p-8 shadow-[0_24px_64px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.12)] relative overflow-hidden">
+        <div className="backdrop-blur-2xl bg-[#091126]/80 border border-white/15 rounded-[22px] sm:rounded-[26px] p-4 sm:p-7 shadow-[0_24px_64px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.12)] relative overflow-hidden">
           {/* Subtle glowing ambient lights matching CSAM theme */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#FF8C38]/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#00E5FF]/15 rounded-full blur-3xl pointer-events-none" />
@@ -494,16 +497,20 @@ export default function App() {
               <input
                 id="manualTokenInput"
                 type="text"
-                placeholder="Enter attendee token (e.g. badge token or URL)..."
+                placeholder="Enter attendee token (e.g. CSAM-001)..."
                 value={manualToken}
                 onChange={(e) => setManualToken(e.target.value)}
-                className="flex-1 backdrop-blur-md bg-black/40 border border-white/15 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#7888A6] outline-none transition-colors"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="text"
+                className="flex-1 backdrop-blur-md bg-black/50 border border-white/15 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 rounded-xl px-3.5 py-2.5 text-base sm:text-xs text-white placeholder-[#7888A6] outline-none transition-colors min-h-[44px]"
               />
               <button
                 id="manualSubmitBtn"
                 type="submit"
                 disabled={!manualToken.trim()}
-                className="px-4 py-2.5 rounded-xl font-bold text-xs text-white backdrop-blur-md bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
+                className="px-4 py-2.5 rounded-xl font-bold text-xs text-white backdrop-blur-md bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md min-h-[44px]"
               >
                 Verify Badge
               </button>

@@ -14,7 +14,7 @@ class SoundManager {
     } catch (e) {}
   }
 
-  private initCtx() {
+  public initCtx() {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
@@ -166,3 +166,37 @@ class SoundManager {
 }
 
 export const soundFx = new SoundManager();
+
+/**
+ * Mobile Haptic Vibration Feedback
+ * Gives physical tactile sensation on iOS (where supported) and Android devices
+ */
+export const triggerHaptic = (type: 'success' | 'duplicate' | 'failure' | 'tap' = 'tap') => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      if (type === 'success') {
+        navigator.vibrate([40, 40, 50]);
+      } else if (type === 'duplicate') {
+        navigator.vibrate([70, 40, 70]);
+      } else if (type === 'failure') {
+        navigator.vibrate([120]);
+      } else {
+        navigator.vibrate(20);
+      }
+    } catch (e) {}
+  }
+};
+
+// Auto-unlock AudioContext on first touch for iOS Safari / Mobile Chrome
+if (typeof window !== 'undefined') {
+  const unlockAudioContext = () => {
+    soundFx.initCtx();
+    window.removeEventListener('touchstart', unlockAudioContext);
+    window.removeEventListener('touchend', unlockAudioContext);
+    window.removeEventListener('click', unlockAudioContext);
+  };
+  window.addEventListener('touchstart', unlockAudioContext, { passive: true });
+  window.addEventListener('touchend', unlockAudioContext, { passive: true });
+  window.addEventListener('click', unlockAudioContext, { passive: true });
+}
+
