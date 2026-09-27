@@ -741,6 +741,11 @@ app.post('/api/backend/test', async (req, res) => {
   }
 });
 
+// Route to serve full worker.js script for easy downloading or copying
+app.get('/worker.js', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'worker.js'));
+});
+
 // ----------------- VITE MIDDLEWARE SETUP ----------------- //
 
 async function startServer() {

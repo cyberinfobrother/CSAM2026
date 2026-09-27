@@ -658,7 +658,17 @@ GOOGLE_SCRIPT_URL = "${HARDCODED_GOOGLE_SHEETS_URL}"`;
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const copyWorker = () => {
+  const copyWorker = async () => {
+    try {
+      const res = await fetch('/worker.js');
+      if (res.ok) {
+        const text = await res.text();
+        await navigator.clipboard.writeText(text);
+        setCopiedWorkerCode(true);
+        setTimeout(() => setCopiedWorkerCode(false), 2000);
+        return;
+      }
+    } catch (_) {}
     navigator.clipboard.writeText(sampleWorkerCode);
     setCopiedWorkerCode(true);
     setTimeout(() => setCopiedWorkerCode(false), 2000);
