@@ -32,7 +32,7 @@ import { QrCode, Sparkles, User, AlertCircle, ShieldAlert } from 'lucide-react';
 export default function App() {
   // Vendor Station
   const [vendors] = useState<VendorStation[]>(DEFAULT_VENDORS);
-  const [currentVendor, setCurrentVendor] = useState<VendorStation>(() => {
+  const [currentVendor, setCurrentVendor] = useState<VendorStation | null>(() => {
     // Check URL query param first
     try {
       const params = new URLSearchParams(window.location.search);
@@ -45,7 +45,11 @@ export default function App() {
       }
     } catch (e) {}
     const storedId = getStoredVendorId();
-    return DEFAULT_VENDORS.find((v) => v.id === storedId) || DEFAULT_VENDORS[0]; // Booth 1 default
+    if (storedId) {
+      const found = DEFAULT_VENDORS.find((v) => v.id === storedId);
+      if (found) return found;
+    }
+    return null; // By default no booth is preselected; booth master must choose their booth
   });
 
   // Backend Integration State (Defaulted to live Google Sheets database)
@@ -100,9 +104,9 @@ export default function App() {
     } catch (e) {}
   }, [scans]);
 
-  const handleSelectVendor = (v: VendorStation) => {
+  const handleSelectVendor = (v: VendorStation | null) => {
     setCurrentVendor(v);
-    saveStoredVendorId(v.id);
+    saveStoredVendorId(v ? v.id : null);
     setOutcome(null);
   };
 
@@ -147,6 +151,18 @@ export default function App() {
         return;
       }
 
+      if (!currentVendor) {
+        soundFx.playFailure();
+        triggerHaptic('failure');
+        setOutcome({
+          type: 'failure',
+          title: '⚠️ Choose Your Booth First',
+          message: 'Please choose your booth from the dropdown menu above before recording attendee check-ins.',
+          rawPayload: rawText,
+        });
+        return;
+      }
+
       // 1. Extract participant token
       let token = rawText.trim();
       try {
@@ -178,7 +194,7 @@ export default function App() {
           ? `Logged to ${res.externalBackend.sheetName || 'Google Sheet'} column [${updatedCol}]`
           : res.externalBackend?.error
           ? `Sync pending: ${res.externalBackend.error}`
-          : 'Saved locally — pending Google Sheet sync';
+          : 'Saved locally : pending Google Sheet sync';
 
         if (isDuplicate) {
           soundFx.playDuplicate();
@@ -277,7 +293,7 @@ export default function App() {
             participant = {
               token,
               name: `Guest Participant (${token.slice(0, 8)})`,
-              office: 'Attendee — Security Summit 2026',
+              office: 'Attendee : Security Summit 2026',
               completedVendors: [],
             };
             updatedList.push(participant);
@@ -419,7 +435,7 @@ export default function App() {
   };
 
   // Vendor stations stats for this station
-  const stationScans = scans.filter((s) => s.vendorId === currentVendor.id);
+  const stationScans = currentVendor ? scans.filter((s) => s.vendorId === currentVendor.id) : [];
   const uniqueAttendees = new Set(stationScans.map((s) => s.participantToken)).size;
 
   return (
@@ -543,7 +559,14 @@ export default function App() {
         {/* Footer info & tips */}
         <div className="mt-4 text-center text-xs text-[#8A9CBE] space-y-1">
           <p>
-            Connected to Vendor Station: <strong className="text-white">{currentVendor.name}</strong> ({currentVendor.token})
+            Connected to Vendor Station:{' '}
+            {currentVendor ? (
+              <>
+                <strong className="text-white">{currentVendor.name}</strong> ({currentVendor.token})
+              </>
+            ) : (
+              <strong className="text-cyan-300">Choose Your Booth from dropdown</strong>
+            )}
           </p>
           <p className="text-[11px] text-[#7284A5]">
             CSAM 2026 QR Verification Portal • Compatible with mobile web passports and physical badges.
@@ -555,7 +578,7 @@ export default function App() {
       <CameraModal
         isOpen={isCameraModalOpen}
         state={cameraModalState}
-        stationName={currentVendor.name.replace(/^VENDOR \d+ — /, '')}
+        stationName={currentVendor ? currentVendor.name.replace(/^VENDOR \d+ : /, '') : 'Booth Station'}
         errorMessage={cameraModalError}
         onClose={() => setIsCameraModalOpen(false)}
         onGrant={handleGrantPermission}
@@ -568,7 +591,7 @@ export default function App() {
         onClose={() => setIsHistoryModalOpen(false)}
         scans={scans}
         onClearHistory={() => setScans([])}
-        stationName={currentVendor.name}
+        stationName={currentVendor ? currentVendor.name : 'All Booth Stations'}
       />
 
       {/* Backend & Database Connection Modal */}

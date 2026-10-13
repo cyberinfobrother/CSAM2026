@@ -53,18 +53,27 @@ export function saveStoredParticipants(participants: Participant[]) {
   }
 }
 
-export function getStoredVendorId(): string {
+const SESSION_VENDOR_KEY = 'csam_session_vendor_id';
+
+export function getStoredVendorId(): string | null {
   try {
-    const saved = localStorage.getItem(CURRENT_VENDOR_KEY);
-    if (saved && DEFAULT_VENDORS.some(v => v.id === saved)) {
-      return saved;
+    // Clean legacy localStorage key so default is always Choose Your Booth on new visits
+    localStorage.removeItem(CURRENT_VENDOR_KEY);
+    const sessionSaved = sessionStorage.getItem(SESSION_VENDOR_KEY);
+    if (sessionSaved && DEFAULT_VENDORS.some(v => v.id === sessionSaved)) {
+      return sessionSaved;
     }
   } catch (e) {}
-  return 'Booth 1'; // Default to Booth 1 - Netsec
+  return null; // By default no booth is selected until the booth master chooses one
 }
 
-export function saveStoredVendorId(id: string) {
+export function saveStoredVendorId(id: string | null) {
   try {
-    localStorage.setItem(CURRENT_VENDOR_KEY, id);
+    if (id) {
+      sessionStorage.setItem(SESSION_VENDOR_KEY, id);
+    } else {
+      sessionStorage.removeItem(SESSION_VENDOR_KEY);
+    }
+    localStorage.removeItem(CURRENT_VENDOR_KEY);
   } catch (e) {}
 }

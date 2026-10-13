@@ -41,7 +41,7 @@ export const ScanResultCard: React.FC<ScanResultCardProps> = ({
       {/* Live Status indicator */}
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-[11px] font-semibold text-emerald-300 border border-emerald-400/30 mb-2 shadow-sm">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        Camera Ready — Next badge can scan now
+        Camera Ready : Next badge can scan now
       </div>
 
       {/* Status Icon & Title */}

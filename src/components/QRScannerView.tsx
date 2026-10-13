@@ -139,7 +139,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         setTimeout(() => {
           setScanFlash(false);
           isProcessingRef.current = false;
-          setScannerStatus('Camera live — Ready for next attendee');
+          setScannerStatus('Camera live : Ready for next attendee');
         }, 1800);
       };
 
@@ -175,7 +175,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       }
 
       setIsScanning(true);
-      setScannerStatus('Camera live — Ready for attendee badges');
+      setScannerStatus('Camera live : Ready for attendee badges');
 
       // Check for torch capability
       try {

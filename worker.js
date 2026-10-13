@@ -293,7 +293,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="BoothMaster" />
   <meta name="format-detection" content="telephone=no" />
-  <title>BoothMaster QR Portal — CSAM 2026</title>
+  <title>BoothMaster QR Portal : CSAM 2026</title>
   
   <script src="https://cdn.tailwindcss.com"><\/script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>
@@ -379,38 +379,46 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">CyberSecurity Awareness Month 2026</h1>
         <div class="text-xs sm:text-sm text-cyan-300/90 font-semibold mt-1 tracking-wide uppercase">CYBERMASTER CHALLENGE SCANNER</div>
 
-        <!-- Booth selector with exact name from Image 1: Booth2 - TVM -->
+        <!-- Booth selector with default Choose Your Booth -->
         <div class="relative inline-block mt-3 text-center">
-          <button id="stationDropdownBtn" onclick="toggleStationDropdown()" class="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-black/45 hover:bg-black/60 border border-white/15 text-white text-base sm:text-lg font-bold tracking-wide">
-            <span id="selectedStationName" class="text-cyan-400 font-extrabold">Booth2 - TVM</span>
-            <svg class="w-4 h-4 text-[#9BB0D3] group-hover:text-white transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button id="stationDropdownBtn" onclick="toggleStationDropdown()" class="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/60 hover:border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] text-cyan-200 ring-2 ring-cyan-400/20 active:scale-98 text-base sm:text-lg font-bold tracking-wide transition-all cursor-pointer">
+            <span id="selectedStationName" class="text-cyan-300 font-extrabold flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
+              <span>Choose Your Booth</span>
+            </span>
+            <svg class="w-4 h-4 text-cyan-300 group-hover:translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          <div id="stationDropdownMenu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden">
-            <div class="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10">Switch Booth Station</div>
-            <button onclick="selectStation('Booth 1', 'B1', 'Booth 1 - Netsec')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3]">
-              <div>
-                <div class="text-white font-semibold">Booth 1 - Netsec</div>
-                <div class="text-[11px] text-[#9BB0D3]">Network Security & Firewall — BoothQR1 (Col 6)</div>
-              </div>
-              <span class="text-amber-300 font-bold">B1</span>
-            </button>
-            <button onclick="selectStation('Booth 2', 'B2', 'Booth2 - TVM')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 border-l-2 border-cyan-400 bg-cyan-500/15">
-              <div>
-                <div class="text-white font-semibold">Booth2 - TVM</div>
-                <div class="text-[11px] text-[#9BB0D3]">Threat & Vulnerability Management — BoothQR2 (Col 8)</div>
-              </div>
-              <span class="text-cyan-300 font-bold">B2</span>
-            </button>
-            <button onclick="selectStation('Booth 3', 'B3', 'Booth3 - SecOps')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3]">
-              <div>
-                <div class="text-white font-semibold">Booth3 - SecOps</div>
-                <div class="text-[11px] text-[#9BB0D3]">Security Operations & Incident Response — BoothQR3 (Col 10)</div>
-              </div>
-              <span class="text-purple-300 font-bold">B3</span>
-            </button>
+          <div id="stationDropdownMenu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden animate-scale-up">
+            <div class="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10 flex items-center justify-between">
+              <span>Select Your Booth Station</span>
+              <span class="text-[9px] text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30 font-semibold">Required</span>
+            </div>
+            <div class="max-h-60 overflow-y-auto">
+              <button onclick="selectStation('Booth 1', 'B1', 'Booth 1 - Netsec')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3] cursor-pointer">
+                <div>
+                  <div class="text-white font-semibold">Booth 1 - Netsec</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Network Security & Firewall : BoothQR1 (Col 6)</div>
+                </div>
+                <span class="text-amber-300 font-bold">B1</span>
+              </button>
+              <button onclick="selectStation('Booth 2', 'B2', 'Booth2 - TVM')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3] cursor-pointer">
+                <div>
+                  <div class="text-white font-semibold">Booth2 - TVM</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Threat & Vulnerability Management : BoothQR2 (Col 8)</div>
+                </div>
+                <span class="text-cyan-300 font-bold">B2</span>
+              </button>
+              <button onclick="selectStation('Booth 3', 'B3', 'Booth3 - SecOps')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 hover:bg-white/5 text-[#9BB0D3] cursor-pointer">
+                <div>
+                  <div class="text-white font-semibold">Booth3 - SecOps</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Security Operations & Incident Response : BoothQR3 (Col 10)</div>
+                </div>
+                <span class="text-purple-300 font-bold">B3</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -435,7 +443,7 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
           </div>
           <div class="absolute bottom-3 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-xl text-xs text-white border border-white/20 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span>Camera live — Ready for attendee badges</span>
+            <span>Camera live : Ready for attendee badges</span>
           </div>
         </div>
 
@@ -606,7 +614,12 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
   </div>
 
   <script>
-    let currentStation = { id: 'Booth 2', name: 'Booth2 - TVM', token: 'B2' };
+    let currentStation = null;
+    try {
+      localStorage.removeItem('csam_current_booth');
+      const saved = sessionStorage.getItem('csam_current_booth');
+      if (saved) currentStation = JSON.parse(saved);
+    } catch (e) {}
     let scans = JSON.parse(localStorage.getItem('csam_vendor_scans_prod') || '[]');
     let html5QrScanner = null;
     let soundEnabled = true;
@@ -694,14 +707,25 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
     function selectStation(id, token, name) {
       triggerHaptic('tap');
       currentStation = { id: id, token: token, name: name };
+      try {
+        sessionStorage.setItem('csam_current_booth', JSON.stringify(currentStation));
+        localStorage.removeItem('csam_current_booth');
+      } catch (e) {}
       document.getElementById('selectedStationName').textContent = name;
-      document.getElementById('footerStationName').textContent = name;
-      document.getElementById('footerStationToken').textContent = token;
+      if (document.getElementById('footerStationName')) document.getElementById('footerStationName').textContent = name;
+      if (document.getElementById('footerStationToken')) document.getElementById('footerStationToken').textContent = token;
       document.getElementById('stationDropdownMenu').classList.add('hidden');
       updateStats();
     }
 
     function updateStats() {
+      if (!currentStation) {
+        document.getElementById('statTotalScans').textContent = '0';
+        document.getElementById('statUniqueAttendees').textContent = '0';
+        const badge = document.getElementById('headerScanCountBadge');
+        if (badge) badge.classList.add('hidden');
+        return;
+      }
       const stationScans = scans.filter(s => s.vendorId === currentStation.id || s.vendorToken === currentStation.token);
       const unique = new Set(stationScans.map(s => s.participantToken)).size;
       document.getElementById('statTotalScans').textContent = stationScans.length;
@@ -839,6 +863,16 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
     }
 
     async function processBadgeScan(rawText) {
+      if (!currentStation) {
+        triggerHaptic('failure');
+        showOutcomeModal({
+          type: 'duplicate',
+          title: '⚠️ Choose Your Booth First',
+          message: 'Please choose your assigned booth station from the dropdown menu above before recording attendee check-ins.',
+          scansCount: 0,
+        });
+        return;
+      }
       let token = rawText.trim();
       try {
         if (token.startsWith('http://') || token.startsWith('https://')) {
@@ -976,6 +1010,15 @@ function renderOriginalBoothMasterHtml(googleScriptUrl) {
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      if (currentStation && currentStation.name) {
+        document.getElementById('selectedStationName').textContent = currentStation.name;
+        if (document.getElementById('footerStationName')) document.getElementById('footerStationName').textContent = currentStation.name;
+        if (document.getElementById('footerStationToken')) document.getElementById('footerStationToken').textContent = currentStation.token;
+      } else {
+        document.getElementById('selectedStationName').textContent = 'Choose Your Booth';
+        if (document.getElementById('footerStationName')) document.getElementById('footerStationName').textContent = 'Choose Your Booth';
+        if (document.getElementById('footerStationToken')) document.getElementById('footerStationToken').textContent = 'Not Selected';
+      }
       updateStats();
       loadCameras();
     });

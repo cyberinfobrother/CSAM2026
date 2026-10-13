@@ -1057,7 +1057,7 @@ GOOGLE_SCRIPT_URL = "${HARDCODED_GOOGLE_SHEETS_URL}"`;
                       <td className="p-2 border-r border-[#1C253D] bg-emerald-950/30 text-emerald-400 font-bold">
                         true
                       </td>
-                      <td className="p-2 border-r border-[#1C253D] text-gray-500">—</td>
+                      <td className="p-2 border-r border-[#1C253D] text-gray-500">-</td>
                       <td className="p-2 border-r border-[#1C253D] bg-red-950/20 text-red-400 font-mono">
                         false
                       </td>

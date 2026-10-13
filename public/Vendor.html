@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="BoothMaster" />
   <meta name="format-detection" content="telephone=no" />
-  <title>BoothMaster QR Portal — CSAM 2026</title>
+  <title>BoothMaster QR Portal : CSAM 2026</title>
   
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -145,37 +145,41 @@
           <button
             id="stationDropdownBtn"
             onclick="toggleStationDropdown()"
-            class="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-black/45 hover:bg-black/60 border border-white/15 hover:border-cyan-400/50 text-white text-base sm:text-lg font-bold tracking-wide transition-all shadow-inner cursor-pointer"
+            class="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/60 hover:border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] text-cyan-200 ring-2 ring-cyan-400/20 active:scale-98 text-base sm:text-lg font-bold tracking-wide transition-all cursor-pointer"
           >
-            <span id="selectedStationName" class="text-cyan-400 font-extrabold">Booth2 - TVM</span>
-            <svg class="w-4 h-4 text-[#9BB0D3] group-hover:text-white transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span id="selectedStationName" class="text-cyan-300 font-extrabold flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
+              <span>Choose Your Booth</span>
+            </span>
+            <svg class="w-4 h-4 text-cyan-300 group-hover:translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
           <div id="stationDropdownMenu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden animate-scale-up">
-            <div class="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10">
-              Switch Booth Station
+            <div class="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10 flex items-center justify-between">
+              <span>Select Your Booth Station</span>
+              <span class="text-[9px] text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30 font-semibold">Required</span>
             </div>
             <div class="max-h-60 overflow-y-auto">
               <button onclick="selectStation('Booth 1', 'B1', 'Booth 1 - Netsec')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left text-[#9BB0D3]">
                 <div>
                   <div class="text-white font-semibold text-sm">Booth 1 - Netsec</div>
-                  <div class="text-[11px] text-[#9BB0D3]">Network Security & Firewall — BoothQR1 (Col 6)</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Network Security & Firewall : BoothQR1 (Col 6)</div>
                 </div>
                 <span class="text-xs font-bold text-amber-300">B1</span>
               </button>
-              <button onclick="selectStation('Booth 2', 'B2', 'Booth2 - TVM')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left border-l-2 border-cyan-400 bg-cyan-500/15">
+              <button onclick="selectStation('Booth 2', 'B2', 'Booth2 - TVM')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left text-[#9BB0D3]">
                 <div>
                   <div class="text-white font-semibold text-sm">Booth2 - TVM</div>
-                  <div class="text-[11px] text-[#9BB0D3]">Threat & Vulnerability Management — BoothQR2 (Col 8)</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Threat & Vulnerability Management : BoothQR2 (Col 8)</div>
                 </div>
                 <span class="text-xs font-bold text-cyan-300">B2</span>
               </button>
               <button onclick="selectStation('Booth 3', 'B3', 'Booth3 - SecOps')" class="w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors hover:bg-white/5 text-left text-[#9BB0D3]">
                 <div>
                   <div class="text-white font-semibold text-sm">Booth3 - SecOps</div>
-                  <div class="text-[11px] text-[#9BB0D3]">Security Operations & Incident Response — BoothQR3 (Col 10)</div>
+                  <div class="text-[11px] text-[#9BB0D3]">Security Operations & Incident Response : BoothQR3 (Col 10)</div>
                 </div>
                 <span class="text-xs font-bold text-purple-300">B3</span>
               </button>
@@ -209,7 +213,7 @@
           <!-- Live Status Pill -->
           <div class="absolute bottom-3 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-xl text-xs text-white border border-white/20 flex items-center gap-2 shadow-xl">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span id="scannerStatusText" class="font-medium tracking-wide">Camera live — Ready for attendee badges</span>
+            <span id="scannerStatusText" class="font-medium tracking-wide">Camera live : Ready for attendee badges</span>
           </div>
         </div>
 
@@ -309,7 +313,7 @@
       <div id="resultCard" class="hidden mt-4 p-5 rounded-2xl text-center text-white shadow-2xl transition-all animate-scale-up">
         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-[11px] font-semibold text-emerald-300 border border-emerald-400/30 mb-2 shadow-sm">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Camera Ready — Next badge can scan now
+          Camera Ready : Next badge can scan now
         </div>
         <div id="resultTitle" class="text-xl font-extrabold tracking-wide uppercase my-1 text-emerald-300">
           ✓ CHALLENGE COMPLETE
@@ -443,9 +447,14 @@
   </div>
 
   <script>
-    // State - Default to Booth2 - TVM matching Image 1
+    // State - By default null so booth master has to choose their booth
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAeLqizAvH2HGjbQF0eG7rPaf0RTNE41NfC6Xob5fRJINICFsNvIETXNZj08l9DK3A/exec';
-    let currentStation = { id: 'Booth 2', name: 'Booth2 - TVM', token: 'B2' };
+    let currentStation = null;
+    try {
+      localStorage.removeItem('csam_current_booth');
+      const saved = sessionStorage.getItem('csam_current_booth');
+      if (saved) currentStation = JSON.parse(saved);
+    } catch (e) {}
     let scans = JSON.parse(localStorage.getItem('csam_vendor_scans_prod') || '[]');
     let html5QrScanner = null;
     let soundEnabled = localStorage.getItem('csam_sound_enabled') !== 'false';
@@ -538,14 +547,25 @@
     function selectStation(id, token, name) {
       triggerHaptic('tap');
       currentStation = { id: id, token: token, name: name };
+      try {
+        sessionStorage.setItem('csam_current_booth', JSON.stringify(currentStation));
+        localStorage.removeItem('csam_current_booth');
+      } catch (e) {}
       document.getElementById('selectedStationName').textContent = name;
-      document.getElementById('footerStationName').textContent = name;
-      document.getElementById('footerStationToken').textContent = token;
+      if (document.getElementById('footerStationName')) document.getElementById('footerStationName').textContent = name;
+      if (document.getElementById('footerStationToken')) document.getElementById('footerStationToken').textContent = token;
       document.getElementById('stationDropdownMenu').classList.add('hidden');
       updateStats();
     }
 
     function updateStats() {
+      if (!currentStation) {
+        document.getElementById('statTotalScans').textContent = '0';
+        document.getElementById('statUniqueAttendees').textContent = '0';
+        const badge = document.getElementById('headerScanCountBadge');
+        if (badge) badge.classList.add('hidden');
+        return;
+      }
       const stationScans = scans.filter(s => s.vendorId === currentStation.id || s.vendorToken === currentStation.token);
       const unique = new Set(stationScans.map(s => s.participantToken)).size;
       document.getElementById('statTotalScans').textContent = stationScans.length;
@@ -685,6 +705,16 @@
     }
 
     async function processBadgeScan(rawText) {
+      if (!currentStation) {
+        triggerHaptic('failure');
+        showOutcomeModal({
+          type: 'duplicate',
+          title: '⚠️ Choose Your Booth First',
+          message: 'Please choose your assigned booth station from the dropdown menu above before recording attendee check-ins.',
+          scansCount: 0,
+        });
+        return;
+      }
       let token = rawText.trim();
       try {
         if (token.startsWith('http://') || token.startsWith('https://')) {
@@ -831,6 +861,15 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      if (currentStation && currentStation.name) {
+        document.getElementById('selectedStationName').textContent = currentStation.name;
+        if (document.getElementById('footerStationName')) document.getElementById('footerStationName').textContent = currentStation.name;
+        if (document.getElementById('footerStationToken')) document.getElementById('footerStationToken').textContent = currentStation.token;
+      } else {
+        document.getElementById('selectedStationName').textContent = 'Choose Your Booth';
+        if (document.getElementById('footerStationName')) document.getElementById('footerStationName').textContent = 'Choose Your Booth';
+        if (document.getElementById('footerStationToken')) document.getElementById('footerStationToken').textContent = 'Not Selected';
+      }
       updateStats();
       loadCameras();
     });

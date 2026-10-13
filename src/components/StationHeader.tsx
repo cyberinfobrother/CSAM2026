@@ -4,9 +4,9 @@ import { VendorStation } from '../types';
 import { triggerHaptic } from '../utils/audio';
 
 interface StationHeaderProps {
-  currentVendor: VendorStation;
+  currentVendor: VendorStation | null;
   allVendors: VendorStation[];
-  onSelectVendor: (vendor: VendorStation) => void;
+  onSelectVendor: (vendor: VendorStation | null) => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   onOpenTestBadges?: () => void;
@@ -149,16 +149,28 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
       {/* Station Dropdown Selector */}
       <div className="relative inline-block mt-3 text-center">
         <button
+          id="stationDropdownBtn"
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-black/45 hover:bg-black/60 border border-white/15 hover:border-cyan-400/50 text-white text-base sm:text-lg font-bold tracking-wide transition-all shadow-inner cursor-pointer"
+          className={`group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl backdrop-blur-xl transition-all shadow-inner cursor-pointer border ${
+            !currentVendor
+              ? 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-400/60 hover:border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] text-cyan-200 ring-2 ring-cyan-400/20 active:scale-98'
+              : 'bg-black/50 hover:bg-black/65 border-white/20 hover:border-cyan-400/50 text-white active:scale-98'
+          } text-base sm:text-lg font-bold tracking-wide`}
         >
-          <span className="text-cyan-400 font-extrabold">
-            {currentVendor.name}
+          <span className={!currentVendor ? 'text-cyan-300 font-extrabold flex items-center gap-2' : 'text-cyan-400 font-extrabold'}>
+            {!currentVendor ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                <span>Choose Your Booth</span>
+              </>
+            ) : (
+              currentVendor.name
+            )}
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-[#9BB0D3] group-hover:text-white transition-transform ${
-              dropdownOpen ? 'rotate-180' : ''
-            }`}
+            className={`w-4 h-4 transition-transform ${
+              !currentVendor ? 'text-cyan-300 group-hover:translate-y-0.5' : 'text-[#9BB0D3] group-hover:text-white'
+            } ${dropdownOpen ? 'rotate-180' : ''}`}
           />
         </button>
 
@@ -169,12 +181,17 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
               onClick={() => setDropdownOpen(false)}
             />
             <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-80 backdrop-blur-2xl bg-[#091126]/95 border border-white/20 rounded-xl shadow-2xl z-30 py-1.5 text-left overflow-hidden animate-scale-up">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10">
-                Switch Booth Station
+              <div className="px-3 py-1.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-white/10 flex items-center justify-between">
+                <span>Select Your Booth Station</span>
+                {!currentVendor && (
+                  <span className="text-[9px] text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30 font-semibold">
+                    Required
+                  </span>
+                )}
               </div>
               <div className="max-h-60 overflow-y-auto">
                 {allVendors.map((v) => {
-                  const isSelected = v.id === currentVendor.id;
+                  const isSelected = currentVendor?.id === v.id;
                   return (
                     <button
                       key={v.id}
@@ -183,7 +200,7 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
                         onSelectVendor(v);
                         setDropdownOpen(false);
                       }}
-                      className={`w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors active:bg-cyan-500/20 ${
+                      className={`w-full px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition-colors active:bg-cyan-500/20 cursor-pointer ${
                         isSelected
                           ? 'bg-cyan-500/15 text-white font-bold border-l-2 border-cyan-400'
                           : 'text-[#9BB0D3] hover:bg-white/5 hover:text-white'
@@ -194,7 +211,7 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
                           <span className={isSelected ? 'text-amber-300' : 'text-white'}>{v.name}</span>
                         </div>
                         <div className="text-[11px] text-[#9BB0D3] truncate mt-0.5">
-                          {v.category} — {v.stampTitle}
+                          {v.category} : {v.stampTitle}
                         </div>
                       </div>
                       {isSelected && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
@@ -202,14 +219,37 @@ export const StationHeader: React.FC<StationHeaderProps> = ({
                   );
                 })}
               </div>
+              {currentVendor && (
+                <div className="border-t border-white/10 p-1 bg-black/20">
+                  <button
+                    onClick={() => {
+                      triggerHaptic('tap');
+                      onSelectVendor(null);
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full px-2.5 py-1.5 text-[11px] flex items-center justify-center gap-1.5 text-[#8A9CBE] hover:text-cyan-300 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <span>Reset to &quot;Choose Your Booth&quot;</span>
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
       </div>
 
-      <div className="mt-1 text-[11px] text-emerald-400 font-medium flex items-center justify-center gap-1.5">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        Station Online & Ready
+      <div className="mt-1 text-[11px] font-medium flex items-center justify-center gap-1.5">
+        {currentVendor ? (
+          <>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-400">Station Online & Ready</span>
+          </>
+        ) : (
+          <>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-amber-300 font-semibold">Please choose your booth from dropdown</span>
+          </>
+        )}
       </div>
     </div>
   );
