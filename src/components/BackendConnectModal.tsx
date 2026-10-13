@@ -634,7 +634,7 @@ export default {
   },
 };`;
 
-  const sampleWranglerCode = `name = "csam-boothmaster-proxy"
+  const sampleWranglerCode = `name = 'csam2026'
 main = "worker.js"
 compatibility_date = "2024-09-01"
 
